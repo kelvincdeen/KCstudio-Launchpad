@@ -39,7 +39,7 @@ This isn't just a concept; it's a real, working system. The entire demo platform
 
 ## [launchpad.kcstudio.nl](https://launchpad.kcstudio.nl/)
 
-*   🌐 **Live Demo:** [launchpad.kcstudio.nl/backend-tester](https://launchpad.kcstudio.nl/backend-tester)
+*   🌐 **Live Demo:** [launchpad.kcstudio.nl/backend-tester](https://launchpad.kcstudio.nl/live-demo)
 *   📚 **Live API Docs:** [launchpad.kcstudio.nl/api-docs](https://launchpad.kcstudio.nl/api-docs)
 *   🏛️ **Read about the philosphy:** [The 'Why'](https://launchpad.kcstudio.nl/the-why)
 *   🎥 **Full Video Walkthrough:** [Watch the 5-minute setup](https://youtu.be/B_mNKLXpL_0))
