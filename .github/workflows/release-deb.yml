@@ -1,0 +1,84 @@
+name: Manual Debian Release (with release notes)
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number"
+        required: true
+      title:
+        description: "Release title"
+        required: true
+
+permissions:
+  contents: write
+  
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set variables
+        run: |
+          echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+
+      - name: Create Debian package structure
+        run: |
+          mkdir -p build/kcstudio-launchpad/DEBIAN
+          mkdir -p build/kcstudio-launchpad/opt/kcstudio-launchpad
+          mkdir -p build/kcstudio-launchpad/usr/bin
+
+          cp *.sh build/kcstudio-launchpad/opt/kcstudio-launchpad/
+          chmod 0755 build/kcstudio-launchpad/opt/kcstudio-launchpad/*.sh
+
+          ln -s /opt/kcstudio-launchpad/KCstudioLaunchpad.sh build/kcstudio-launchpad/usr/bin/launchpad
+          ln -s /opt/kcstudio-launchpad/KCstudioLaunchpad.sh build/kcstudio-launchpad/usr/bin/kcstudio-launchpad
+
+      - name: Create control file
+        run: |
+          cat <<EOF > build/kcstudio-launchpad/DEBIAN/control
+          Package: kcstudio-launchpad
+          Version: $VERSION
+          Section: utils
+          Priority: optional
+          Architecture: amd64
+          Depends: bash
+          Maintainer: KCstudio <info@kcstudio.nl>
+          Description: KCstudio Launchpad
+           Bash TUI platform that turns a single VPS into a structured, security-hardened, multi-project application server — without containers.
+          EOF
+
+      - name: Create post-install script
+        run: |
+          cat <<EOF > build/kcstudio-launchpad/DEBIAN/postinst
+          #!/bin/bash
+          echo ""
+          echo ""
+          echo "KCstudio Launchpad installed, run with `launchpad` or `kcstudio-launchpad`"
+          echo ""
+          echo ""
+          EOF
+
+          chmod 0755 build/kcstudio-launchpad/DEBIAN/postinst
+
+      - name: Build Debian package
+        run: |
+          dpkg-deb --build build/kcstudio-launchpad
+          mv build/kcstudio-launchpad.deb kcstudio-launchpad.deb
+
+      - name: Generate SHA256 checksum
+        run: sha256sum kcstudio-launchpad.deb > kcstudio-launchpad.deb.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: ${{ github.event.inputs.title }}
+          body_path: release-notes.md
+          generate_release_notes: true
+          files: |
+            kcstudio-launchpad.deb
+            kcstudio-launchpad.deb.sha256
