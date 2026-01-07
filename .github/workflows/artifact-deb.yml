@@ -57,7 +57,7 @@ jobs:
           #!/bin/bash
           echo ""
           echo ""
-          echo "KCstudio Launchpad installed, run with `launchpad` or `kcstudio-launchpad`"
+          echo "KCstudio Launchpad installed, run with: launchpad or kcstudio-launchpad"
           echo ""
           echo ""
           EOF
