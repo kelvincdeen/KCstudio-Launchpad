@@ -1,8 +1,9 @@
-<a href="https://launchpad.kcstudio.nl">
-  <img src="https://launchpad.kcstudio.nl/img/KCstudio_Launchpad_Logo.webp" alt="KCStudio Launchpad Logo" width="300px">
-</a>
+# KCstudio Launchpad - Bash Platform
 
-# KCStudio Launchpad
+<a href="https://launchpad.kcstudio.nl">
+  <img src="https://launchpad.kcstudio.nl/github/kcstudio_launchpad_banner.png" alt="KCStudio Launchpad Bash Logo" width="100%">
+</a>
+<br></br>
 
 > **Turn a single VPS into a structured, security-hardened, multi-project application server — without containers.**
 
@@ -21,9 +22,6 @@ Just your server, your code, and a guided menu that keeps everything under contr
   <img src="https://img.shields.io/badge/Platform-Ubuntu%2024.04-orange.svg" alt="Platform">
 </p>
 
-<a href="https://launchpad.kcstudio.nl">
-  <img src="https://launchpad.kcstudio.nl/github/main_menu_startup.gif" alt="KCStudio Launchpad Main Menu Startup Animation">
-</a>
 
 ---
 
@@ -36,6 +34,10 @@ It’s opinionated, pragmatic, and designed for people who want:
 - Ownership of their stack
 - Predictable behavior
 - Fewer moving parts
+
+<a href="https://launchpad.kcstudio.nl">
+  <img src="https://launchpad.kcstudio.nl/img/KCstudio_Launchpad_Logo.webp" alt="KCStudio Launchpad Logo" width="18%">
+</a>
 
 ---
 
@@ -89,8 +91,9 @@ Each step is **interactive and self-documented** - you are never dropped into bl
 <br>
 
 <a href="https://launchpad.kcstudio.nl">
-  <img src="https://launchpad.kcstudio.nl/github/main_menu_startup.gif" alt="KCStudio Launchpad Hub">
+  <img src="https://launchpad.kcstudio.nl/github/kcstudio_launchpad_hub_hardened.png" alt="KCStudio Launchpad Main Menu Startup">
 </a>
+
 
 </br>
 
