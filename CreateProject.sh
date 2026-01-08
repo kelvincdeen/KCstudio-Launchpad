@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# === ADVANCED PROJECT ARCHITECT v9.3 ===
-# Secure, Modular, and Evolvable Full-Stack Project Builder
-#
-# WHAT'S NEW (This Version):
-# - Uses requirements.txt for Python dependency management, improving
-#   reproducibility and adhering to best practices.
+# === KCStudio Launchpad - Advanced Project Architect ===
+# Copyright (c) 2026 Kelvin Deen - KCStudio.nl
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -18,15 +14,28 @@ CREATED_USERS=()
 CREATED_SERVICES=()
 CREATED_NGINX_CONFS=()
 CREATED_NGINX_LINKS=()
-CREATED_LOGROTATE_CONF=""
+CREATED_LOGROTATE_CONFS=()
 PROJECT_CONF_FILE=""
 
+# --- Colors (Standardized) ---
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[1;33m'
+BLUE='\033[36m'
+ORANGE='\033[0;33m'
+DARKGRAY='\033[0;33m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
+
 # --- Helper Functions ---
-log() { echo -e "\n[+] $1"; }
-log_ok() { echo -e "  \e[32m✔\e[0m $1"; }
-log_warn() { echo -e "  \e[33m!\e[0m $1"; }
-log_err() { echo -e "\n[!] \e[31m$1\e[0m" >&2; }
-err() { log_err "$1"; exit 1; }
+log() { echo -e "\n${GREEN}[+]${RESET} $1"; }
+log_ok() { echo -e "  ${GREEN}✔${RESET} $1"; }
+log_warn() { echo -e "  ${YELLOW}!${RESET} $1"; }
+log_err() { echo -e "\n${RED}[!]${RESET} $1" >&2; } # No exit
+warn() { echo -e "\n${YELLOW}[!]${RESET} $1"; }
+err() { echo -e "\n${RED}[X]${RESET} $1" >&2; exit 1; }
+prompt() { read -rp "$(echo -e "${BLUE}[?]${RESET} $1 ")" "$2"; }
+pause() { echo ""; read -rp "Press [Enter] to continue..."; }
 
 # --- Cleanup Function ---
 cleanup() {
@@ -34,9 +43,12 @@ cleanup() {
   echo ""
   log_err "An error occurred or script exited unexpectedly. Rolling back all changes..."
 
-  if [ -n "$CREATED_LOGROTATE_CONF" ] && [ -f "$CREATED_LOGROTATE_CONF" ]; then
-    log "Removing logrotate config: $CREATED_LOGROTATE_CONF"
-    sudo rm -f "$CREATED_LOGROTATE_CONF"
+  # Handle multiple logrotate config files
+  if [ ${#CREATED_LOGROTATE_CONFS[@]} -gt 0 ]; then
+    for conf in "${CREATED_LOGROTATE_CONFS[@]}"; do
+        log "Removing logrotate config: $conf"
+        sudo rm -f "$conf"
+    done
   fi
   if [ ${#CREATED_SERVICES[@]} -gt 0 ]; then
     for service in "${CREATED_SERVICES[@]}"; do
@@ -79,6 +91,30 @@ cleanup() {
     done
   fi
   log_ok "Rollback complete. System should be clean."
+}
+
+# --- Logo Function ---
+show_logo() {
+    clear
+    echo -e '\033[1;37m'
+    cat << 'EOF'
+
+         ██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗   
+         ██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗ 
+         █████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║  
+         ██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║ 
+         ██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝
+         ╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ 
+
+   ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗
+   ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗
+   ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║
+   ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║
+   ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝
+   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝
+
+EOF
+    echo -e "${RESET}"
 }
 
 # --- Python Code Generation Functions ---
@@ -217,8 +253,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 app.state.limiter = limiter
@@ -446,7 +482,9 @@ PYTHON
 <html>
   <body style="margin:0; padding:0; background-color:#ffffff; font-family:Verdana; color:#000000; text-align:center;">
     <div style="max-width:600px; margin:0 auto; padding:40px;">
-      
+
+    <div style="font-size:60px; margin-bottom:10px;">🚀</div>
+
       <h1 style="margin-bottom:10px; font-size:28px; font-weight:bold;">KCstudio Launchpad</h1>
       <h2 style="margin-top:0; font-size:16px; font-weight:normal;">Fullstack Toolkit for Your VPS</h2>
       <p style="margin:30px 0 20px 0; font-size:16px;">
@@ -1079,6 +1117,12 @@ server {
     listen 80;
     server_name $api_domain;
 
+    # Per-project NGINX logging
+    access_log /var/log/nginx/$project-api.access.log;
+    error_log /var/log/nginx/$project-api.error.log;
+
+    include snippets/security-headers.conf;
+
 EOF
         for comp in "${selected_components[@]}"; do
             local port_val=""
@@ -1109,8 +1153,8 @@ EOF
         return 404 '{"error": "Unknown API endpoint"}';
         add_header Content-Type application/json;
     }
+}
 EOF
-        echo "}" | sudo tee -a "$nginx_api_conf" > /dev/null
         
         CREATED_NGINX_CONFS+=("$nginx_api_conf")
         sudo ln -sf "$nginx_api_conf" "/etc/nginx/sites-enabled/"
@@ -1124,7 +1168,11 @@ EOF
         sudo tee "$nginx_web_conf" > /dev/null <<EOF
 server {
   listen 80;
-  server_name $frontend_domain;
+  server_name $frontend_domain www.$frontend_domain;
+
+  # Per-project NGINX logging
+  access_log /var/log/nginx/${project}-web.access.log;
+  error_log /var/log/nginx/${project}-web.error.log;
 
   root $PROJECT_ROOT/$project/website;
   index index.html;
@@ -1137,12 +1185,15 @@ server {
   add_header X-Frame-Options "SAMEORIGIN";
   add_header X-Content-Type-Options "nosniff";
   add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+  # If you want to allow a specific domain to allow iFrame comment out the X-Frame-Options and use this:
+  # add_header Content-Security-Policy "frame-ancestors 'self' https://trusted-site.com" always;
 }
 EOF
         CREATED_NGINX_CONFS+=("$nginx_web_conf")
         sudo ln -sf "$nginx_web_conf" "/etc/nginx/sites-enabled/"
         CREATED_NGINX_LINKS+=("/etc/nginx/sites-enabled/$(basename "$nginx_web_conf")")
-        cert_domains+=( -d "$frontend_domain" )
+        cert_domains+=( -d "$frontend_domain" -d "www.$frontend_domain" )
         log_ok "Created NGINX config for website."
     fi
 
@@ -1175,7 +1226,7 @@ create_project_manifest() {
     log "Creating project manifest file..."
     PROJECT_CONF_FILE="$APP_PATH/project.conf"
     {
-      echo "# Project Configuration - v9.3"
+      echo "# Project Configuration"
       echo "PROJECT=\"$PROJECT\""
       echo "APP_PATH=\"$APP_PATH\""
       echo "HAS_WEBSITE=$HAS_WEBSITE"
@@ -1195,9 +1246,14 @@ create_project_manifest() {
 
 create_logrotate_config() {
     local project=$1
-    log "Creating logrotate configuration..."
-    CREATED_LOGROTATE_CONF="/etc/logrotate.d/$project"
-    sudo tee "$CREATED_LOGROTATE_CONF" > /dev/null <<EOF
+    local has_backend=$2
+    local has_website=$3
+    log "Creating specialized logrotate configurations..."
+
+    if [ "$has_backend" = true ]; then
+        # Configuration for Application Logs (short retention)
+        local app_logrotate_conf="/etc/logrotate.d/${project}-app"
+        sudo tee "$app_logrotate_conf" > /dev/null <<EOF
 /var/www/$project/logs/*/*.log {
     daily
     missingok
@@ -1208,18 +1264,44 @@ create_logrotate_config() {
     copytruncate
 }
 EOF
-    log_ok "Logrotate config created at $CREATED_LOGROTATE_CONF"
+        CREATED_LOGROTATE_CONFS+=("$app_logrotate_conf")
+        log_ok "App logrotate config created at $app_logrotate_conf (7-day retention)."
+    fi
+
+    if [ "$has_website" = true ] || [ "$has_backend" = true ]; then
+        # Configuration for NGINX Logs (long retention)
+        local nginx_logrotate_conf="/etc/logrotate.d/${project}-nginx"
+        sudo tee "$nginx_logrotate_conf" > /dev/null <<EOF
+/var/log/nginx/${project}-*.log {
+    monthly
+    missingok
+    rotate 6
+    compress
+    delaycompress
+    notifempty
+    create 0640 root adm
+    sharedscripts
+    postrotate
+        if [ -f /var/run/nginx.pid ]; then
+            kill -USR1 \`cat /var/run/nginx.pid\`
+        fi
+    endscript
+}
+EOF
+        CREATED_LOGROTATE_CONFS+=("$nginx_logrotate_conf")
+        log_ok "NGINX logrotate config created at $nginx_logrotate_conf (6-month retention)."
+    fi
 }
 
 # --- Main Script Body ---
 run_create_mode() {
     log "Starting project creation..."
     while true; do
-      read -rp "Enter project name (lowercase, no spaces, e.g. my-portfolio): " PROJECT
+      prompt "Enter project name (lowercase, no spaces, e.g. my-portfolio):" PROJECT
       if [[ "$PROJECT" =~ ^[a-z0-9]+(-[a-z0-9]+)*$ ]]; then
         [ -d "$PROJECT_ROOT/$PROJECT" ] && err "Project '$PROJECT' already exists." || break
       else
-        echo "Invalid project name. Please use lowercase letters, numbers, and single hyphens."
+        warn "Invalid project name. Please use lowercase letters, numbers, and single hyphens."
       fi
     done
     
@@ -1228,13 +1310,16 @@ run_create_mode() {
     WEB_USER="web_$PROJECT"
 
     echo ""
-    echo "Select components to create (space-separated numbers, e.g., '1 2 4'):"
-    echo "  1) website   (Static frontend hosting with NGINX)"
-    echo "  2) auth      (User login via 'magic link' email)"
-    echo "  3) app       (Core business logic backend)"
-    echo "  4) database  (Simple SQLite data API)"
-    echo "  5) storage   (Secure file upload/download API)"
-    read -rp "Your choice: " CHOICE
+    echo "==================================================================================="
+    echo "  Select Components"
+    echo "==================================================================================="
+    echo "  [1] website   (Static frontend hosting with NGINX)"
+    echo "  [2] auth      (User login via 'magic link' email)"
+    echo "  [3] app       (Core business logic backend)"
+    echo "  [4] database  (Simple SQLite data API)"
+    echo "  [5] storage   (Secure file upload/download API)"
+    echo "==================================================================================="
+    prompt "Your choice (space-separated, e.g., '1 2 4'):" CHOICE
     
     SELECTED_COMPONENTS=()
     [[ "$CHOICE" =~ "1" ]] && SELECTED_COMPONENTS+=("website")
@@ -1247,7 +1332,7 @@ run_create_mode() {
       err "No components selected. Aborting."
     fi
 
-    # CRITICAL FIX: These are now global to be accessible by the final summary message in main()
+    # These are global to be accessible by the final summary message in main()
     HAS_WEBSITE=false
     HAS_BACKEND=false
     for comp in "${SELECTED_COMPONENTS[@]}"; do
@@ -1260,18 +1345,18 @@ run_create_mode() {
     local RESEND_API_KEY=""
 
     if $HAS_WEBSITE; then
-      read -rp "Enter frontend domain (e.g. my-portfolio.com): " FRONTEND_DOMAIN
+      prompt "Enter frontend domain (e.g. my-portfolio.com):" FRONTEND_DOMAIN
     fi
     if $HAS_BACKEND; then
-      read -rp "Enter API domain (e.g. api.my-portfolio.com): " API_DOMAIN
+      prompt "Enter API domain (e.g. api.my-portfolio.com):" API_DOMAIN
     fi
     if printf '%s\n' "${SELECTED_COMPONENTS[@]}" | grep -q '^auth$'; then
-      read -rsp "Enter your Resend API Key (will not be shown, edit later in .env): " RESEND_API_KEY
+      read -rsp "$(echo -e "${BLUE}[?]${RESET} Enter your Resend API Key (will not be shown, edit later in .env): ")" RESEND_API_KEY
       echo ""
       if [ -z "$RESEND_API_KEY" ]; then
         log_warn "No Resend API Key provided. The 'auth' service will be created, but it will NOT be able to send login emails."
       fi
-      read -rp "Enter the FROM email address for Resend (e.g. login@mydomain.com, edit later in .env, leave empty for default): " RESEND_FROM_EMAIL
+      prompt "Enter the FROM email address for Resend (e.g. login@mydomain.com, leave empty for default):" RESEND_FROM_EMAIL
       if [ -z "$RESEND_FROM_EMAIL" ]; then
         RESEND_FROM_EMAIL="onboarding@resend.dev"
         log_warn "No from-address provided, defaulting to $RESEND_FROM_EMAIL"
@@ -1316,7 +1401,7 @@ run_create_mode() {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <meta name="description" content="This is a template website, entirely automatically generated by the KCstudio Launchpad Toolkit. Fullstack web development made easy. Full source available on GitHub.">
+    <meta name="description" content="This is a template website, entirely automatically generated with the KCstudio Launchpad Toolkit. Fullstack web development made easy. Full source available on GitHub.">
     <link rel="icon" type="image/svg+xml" href='data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23ffae09"/></svg>'>
     <title>Welcome to KCstudio Launchpad Toolkit</title>
     <style>
@@ -1376,7 +1461,7 @@ run_create_mode() {
     <h1>KCstudio Launchpad</h1>
     <p>Fullstack Toolkit Creator and Manager</p>
     <p>Welcome to your project: <strong>$PROJECT</strong></p>
-    <a class="badge" href="https://launchpad.kcstudio.nl/backend-tester">Test your backend here!</a>
+    <a class="badge" href="https://launchpad.kcstudio.nl/live-demo">Test your backend here!</a>
     <div class="social">
       <br>
       <a href="https://github.com/kelvincdeen/kcstudio-launchpad-toolkit" target="_blank">
@@ -1504,7 +1589,6 @@ SVC
     done
 
     if $HAS_BACKEND; then
-      create_logrotate_config "$PROJECT"
       log "Starting and enabling all backend services..."
       sudo systemctl daemon-reload
       for service in "${CREATED_SERVICES[@]}"; do
@@ -1512,6 +1596,8 @@ SVC
           log_ok "Started and enabled $service."
       done
     fi
+
+    create_logrotate_config "$PROJECT" "$HAS_BACKEND" "$HAS_WEBSITE"
 
     if $HAS_WEBSITE || $HAS_BACKEND; then
       configure_nginx_and_certbot "$HAS_WEBSITE" "$HAS_BACKEND" "$PROJECT" "$API_DOMAIN" "$FRONTEND_DOMAIN" "${SELECTED_COMPONENTS[@]}"
@@ -1522,27 +1608,90 @@ SVC
 
 run_restore_mode() {
     log "Starting project restoration..."
-    read -rp "Enter the full path to the backup file (.tar.gz): " backup_path
-    
+
+    echo "How would you like to provide the backup file?"
+    echo "  [1] Restore from a local server path"
+    echo "  [2] Restore from a URL"
+    prompt "Your choice [1-2]:" restore_choice
+
+    local backup_path=""
+    local temp_download_dir="" 
+    local temp_restore_dir=""
+
+    # Set the cleanup trap to only fire on script EXIT (due to error or completion).
+    # This prevents premature deletion of temporary files.
+    trap 'log "Cleaning up temporary files..."; sudo rm -rf "${temp_download_dir:-}" "${temp_restore_dir:-}"' EXIT
+
+    if [[ "$restore_choice" == "1" ]]; then
+        prompt "Enter the full path to the backup file:" backup_path
+    elif [[ "$restore_choice" == "2" ]]; then
+        if ! command -v "wget" &> /dev/null; then
+            log_warn "'wget' is not installed. Attempting to install it..."
+            if ! sudo apt-get update && sudo apt-get install -y wget; then
+                err "Could not install 'wget'. Please install it manually and try again."
+            fi
+        fi
+        prompt "Enter the URL of the backup file:" backup_url
+        temp_download_dir=$(mktemp -d)
+        backup_path="$temp_download_dir/backup.archive"
+        log "Downloading backup from URL..."
+        if ! sudo wget -O "$backup_path" "$backup_url"; then
+            err "Download failed. Please check the URL and try again."
+        fi
+        log_ok "Download complete."
+    else
+        err "Invalid choice. Aborting."
+    fi
+
     if [[ ! -f "$backup_path" ]]; then
         err "Backup file not found at '$backup_path'."
     fi
 
     log "Analyzing backup file..."
-    local temp_restore_dir
     temp_restore_dir=$(mktemp -d)
-    
-    trap 'sudo rm -rf "$temp_restore_dir"' EXIT
-    
-    tar -xzf "$backup_path" -C "$temp_restore_dir"
-    
+
+    # --- Smart Extraction: Detects .tar.gz vs .zip ---
+    local archive_type
+    archive_type=$(file -b --mime-type "$backup_path")
+    log_ok "Detected archive type: $archive_type"
+
+    if [[ "$archive_type" == "application/gzip" || "$archive_type" == "application/x-gzip" ]]; then
+        if ! sudo tar -xzf "$backup_path" -C "$temp_restore_dir"; then
+            err "Failed to extract .tar.gz archive. It may be corrupted."
+        fi
+    elif [[ "$archive_type" == "application/zip" ]]; then
+        if ! command -v "unzip" &> /dev/null; then
+            log_warn "'unzip' is not installed. Attempting to install it..."
+            if ! sudo apt-get update && sudo apt-get install -y unzip; then
+                err "Could not install 'unzip'. Please install it manually and try again."
+            fi
+        fi
+        if ! sudo unzip -o "$backup_path" -d "$temp_restore_dir"; then
+            err "Failed to extract .zip archive. It may be corrupted."
+        fi
+    else
+        err "Unsupported archive type: '$archive_type'. Please use a .tar.gz or .zip file."
+    fi
+    log_ok "Archive extracted successfully."
+
+    # --- Flexible Directory Finder: Handles nested or root files ---
     local backup_project_dir
-    backup_project_dir=$(find "$temp_restore_dir" -mindepth 1 -maxdepth 1 -type d)
+    local extracted_items_count
+    extracted_items_count=$(sudo find "$temp_restore_dir" -mindepth 1 -maxdepth 1 | wc -l)
     
-    if [[ ! -f "$backup_project_dir/project.conf" ]]; then
-        err "Backup is invalid or corrupted (missing project.conf)."
+    if [ "$extracted_items_count" -eq 1 ] && [ -d "$(sudo find "$temp_restore_dir" -mindepth 1 -maxdepth 1)" ]; then
+        log_ok "Detected single project folder in archive."
+        backup_project_dir=$(sudo find "$temp_restore_dir" -mindepth 1 -maxdepth 1)
+    else
+        log_ok "Detected files at the root of the archive."
+        backup_project_dir="$temp_restore_dir"
     fi
 
+    if [[ ! -f "$backup_project_dir/project.conf" ]]; then
+        err "Backup is invalid or corrupted (missing project.conf). Please check archive structure."
+    fi
+
+    # Load the manifest to get project variables
     # shellcheck source=/dev/null
     source "$backup_project_dir/project.conf"
     log_ok "Backup manifest loaded for project '$PROJECT'."
@@ -1554,39 +1703,64 @@ run_restore_mode() {
     if [ -d "$APP_PATH" ]; then
         err "A project named '$PROJECT' already exists. Please remove it before restoring."
     fi
-    
-    # CRITICAL FIX: The port variables are sourced but need to be accessible globally for this function
+
+    # Ensure port variables from the manifest are available
     PORT_AUTH=${PORT_AUTH:-}
     PORT_APP=${PORT_APP:-}
     PORT_DATABASE=${PORT_DATABASE:-}
     PORT_STORAGE=${PORT_STORAGE:-}
 
     log "Provisioning system users and directory structure for restoration..."
-    sudo adduser --system --group --no-create-home "$APP_USER" && CREATED_USERS+=("$APP_USER")
-    log_ok "Created system user '$APP_USER'."
+    if ! id "$APP_USER" &>/dev/null; then
+        sudo adduser --system --group --no-create-home "$APP_USER" && CREATED_USERS+=("$APP_USER")
+        log_ok "Created system user '$APP_USER'."
+    else
+        log_warn "System user '$APP_USER' already exists. Skipping creation."
+    fi
+
     if [[ "$HAS_WEBSITE" == "true" ]]; then
-      sudo adduser --system --group --no-create-home "$WEB_USER" && CREATED_USERS+=("$WEB_USER")
-      log_ok "Created system user '$WEB_USER'."
+        if ! id "$WEB_USER" &>/dev/null; then
+            sudo adduser --system --group --no-create-home "$WEB_USER" && CREATED_USERS+=("$WEB_USER")
+            log_ok "Created system user '$WEB_USER'."
+        else
+            log_warn "System user '$WEB_USER' already exists. Skipping creation."
+        fi
     fi
 
     log "Restoring project files from backup..."
-    sudo mv "$backup_project_dir" "$APP_PATH"
+    sudo mkdir -p "$APP_PATH"
+    # Register the directory for rollback *immediately* after creation.
     CREATED_DIRS+=("$APP_PATH")
-    
+
+    # Use rsync for a robust copy. The trailing slash on the source is critical.
+    if ! sudo rsync -a "$backup_project_dir/" "$APP_PATH/"; then
+        err "Failed to copy restored files. Check permissions and backup structure."
+    fi
+
+    # Set initial broad ownership and permissions
     sudo chown -R "$APP_USER:$APP_USER" "$APP_PATH"
     sudo chmod 751 "$APP_PATH"
     if [[ "$HAS_WEBSITE" == "true" ]]; then
       sudo chown -R "$WEB_USER:$WEB_USER" "$APP_PATH/website"
     fi
-    log_ok "Project files restored and permissions set."
+    log_ok "Project files restored and initial permissions set."
     
+    # Loop through components to set specific, secure permissions identical to create_mode
+    log "Setting final secure permissions for components..."
+    for component in "${SELECTED_COMPONENTS[@]}"; do
+      if [[ "$component" != "website" ]]; then
+        sudo chmod -R 770 "$APP_PATH/$component" "$APP_PATH/logs"
+      fi
+    done
+    log_ok "Component permissions finalized."
+
     log "Re-installing Python dependencies..."
     for component in "${SELECTED_COMPONENTS[@]}"; do
       if [[ "$component" != "website" ]]; then
         if [ -d "$APP_PATH/$component/venv" ]; then
             log_warn "Existing venv found in backup for '$component'. Re-running pip install to ensure compatibility."
         fi
-        
+
         local req_file="$APP_PATH/$component/requirements.txt"
         if [ ! -f "$req_file" ]; then
           log_warn "requirements.txt not found in backup for '$component'. Re-creating it."
@@ -1648,7 +1822,6 @@ SVC
     done
     
     if [[ "$HAS_BACKEND" == "true" ]]; then
-      create_logrotate_config "$PROJECT"
       log "Starting and enabling all restored backend services..."
       sudo systemctl daemon-reload
       for service in "${CREATED_SERVICES[@]}"; do
@@ -1657,27 +1830,19 @@ SVC
       done
     fi
 
+    create_logrotate_config "$PROJECT" "$HAS_BACKEND" "$HAS_WEBSITE"
+
     if [[ "$HAS_WEBSITE" == "true" || "$HAS_BACKEND" == "true" ]]; then
+      # This function correctly registers NGINX files for rollback
       configure_nginx_and_certbot "$HAS_WEBSITE" "$HAS_BACKEND" "$PROJECT" "$API_DOMAIN" "$FRONTEND_DOMAIN" "${SELECTED_COMPONENTS[@]}"
     fi
 }
 
-
 main() {
     trap cleanup ERR EXIT
-    clear
-    echo -e "‘\033[1;37m" # Set color to white
-    cat << 'EOF'
-██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗    ███╗   ██╗██╗     
-██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗   ████╗  ██║██║     
-█████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║   ██╔██╗ ██║██║     
-██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║   ██║╚██╗██║██║     
-██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝██╗██║ ╚████║███████╗
-╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝
-EOF
-    echo -e "\e[0m" # Reset color
+    show_logo
     
-    log "Advanced Project Architect v9.3"
+    log "Advanced Project Architect"
     echo "This script can create a new project from scratch or restore one from a backup."
     
     # Declare variables used in the final summary so they have global scope
@@ -1688,7 +1853,19 @@ EOF
     API_DOMAIN=""
 
     local choice
-    read -rp "Choose an action: (C)reate new project, or (R)estore from backup: " choice
+    echo ""
+    echo "==================================================================================="
+    echo "  Choose Operation"
+    echo "==================================================================================="
+    echo ""
+    printf "  \e[36m[C]\e[0m \e[1;37mCreate New Project\e[0m\n"
+    printf "      \e[90m%s\e[0m\n" "(Start from scratch with a fresh full-stack template)"
+    printf "\n"
+    printf "  \e[36m[R]\e[0m \e[1;37mRestore Project from Backup\e[0m\n"
+    printf "      \e[90m%s\e[0m\n" "(Recover a project from a local archive or URL)"
+    echo ""
+    echo "==================================================================================="
+    prompt "Your choice:" choice
     
     case $choice in
         [Cc]*)
@@ -1708,9 +1885,8 @@ EOF
     if [[ "$HAS_BACKEND" == "true" ]]; then echo "API Base URL: https://$API_DOMAIN/v1/"; fi
     echo ""
     echo "You can now manage this project with:"
-    echo "  ./manageApp.sh $PROJECT"
+    echo "  launchpad (Select Option 3)"
     echo "-----------------------------------------------------"
-
     trap - ERR EXIT
 }
 

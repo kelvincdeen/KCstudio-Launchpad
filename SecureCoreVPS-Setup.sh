@@ -1,19 +1,34 @@
 #!/bin/bash
 
-# === KCStudio.nl Secure Core VPS Setup Script v5.1 ===
-# Usage: Run once on a fresh Ubuntu 24.04+ VPS as root.
-# This script is idempotent - it can be run multiple times safely.
-#
+# === KCStudio Launchpad - Secure Core VPS Setup ===
+# Copyright (c) 2026 Kelvin Deen - KCStudio.nl
 
 set -euo pipefail
 IFS=$'\n\t'
 
-# --- Helper Functions (MUST be defined before they are called) ---
-log() { echo -e "\n\e[32m[+]\e[0m $1"; }
-warn() { echo -e "\n\e[33m[!]\e[0m $1"; }
-die() { echo -e "\n\e[31m[X]\e[0m Error: $1" >&2; exit 1; }
-prompt() { read -rp "$(echo -e "\e[36m[?]\e[0m $1 ")" "$2"; }
-log_ok() { echo -e "  \e[32m✔\e[0m $1"; }
+# --- Constants ---
+SECURE_STATE_FILE="/etc/kcstudio/secure_core.state"
+TOOLKIT_VERSION="v2.0"
+
+# --- Colors (Standardized) ---
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[1;33m'
+BLUE='\033[36m'
+ORANGE='\033[0;33m'
+DARKGRAY='\033[0;33m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
+
+# --- Helper Functions ---
+log() { echo -e "\n${GREEN}[+]${RESET} $1"; }
+log_ok() { echo -e "  ${GREEN}✔${RESET} $1"; }
+log_warn() { echo -e "  ${YELLOW}!${RESET} $1"; }
+log_err() { echo -e "\n${RED}[!]${RESET} $1"; } # No exit
+warn() { echo -e "\n${YELLOW}[!]${RESET} $1"; }
+die() { echo -e "\n${RED}[X]${RESET} Error: $1" >&2; exit 1; }
+err() { echo -e "\n${RED}[X]${RESET} $1" >&2; exit 1; }
+prompt() { read -rp "$(echo -e "${BLUE}[?]${RESET} $1 ")" "$2"; }
 pause() { echo ""; read -rp "Press [Enter] to continue..."; }
 
 
@@ -22,24 +37,42 @@ if [ "$EUID" -ne 0 ]; then
     echo ""
     echo ""
     echo ""
-    warn -e "\n\e[31m[X]\e[0m This script must be run as \e[1mroot\e[0m to \e[1muse & enjoy\e[0m all its \e[1mfeatures\e[0m flawlessly."
-    warn -e "Please \e[1mrun\e[0m it \e[1magain\e[0m with:"
+    warn "This script must be run as root to use & enjoy all its features flawlessly."
+    echo -e "Please \e[1mrun\e[0m it \e[1magain\e[0m with:"
     echo ""
-    echo -e "  \e[36msudo ./$(basename "$0")\e[0m"
+    echo -e "  ${BLUE}sudo $(basename "$0")${RESET}"
     echo ""
     echo ""
     echo ""
     exit 1
 fi
-# --- Helper Functions ---
-log() { echo -e "\n\e[32m[+]\e[0m $1"; }
-warn() { echo -e "\n\e[33m[!]\e[0m $1"; }
-err() { echo -e "\n\e[31m[!] \e[31m$1\e[0m" >&2; exit 1; }
-log_ok() { echo -e "  \e[32m✔\e[0m $1"; }
 
-# ... (your other helper functions) ...
+# --- State Management Functions ---
+mark_setup_complete() {
+    log "Finalizing setup state..."
+    # Create the directory if it doesn't exist
+    mkdir -p "$(dirname "$SECURE_STATE_FILE")"
+    
+    # Write state info to file
+    cat <<EOF > "$SECURE_STATE_FILE"
+SETUP_VERSION=$TOOLKIT_VERSION
+SETUP_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+STATUS=COMPLETE
+EOF
+    # Secure the file so it's readable but not writable by others
+    chmod 644 "$SECURE_STATE_FILE"
+    log_ok "System marked as secured ($TOOLKIT_VERSION)."
+}
 
-# --- NEW OS Verification Function ---
+check_setup_state() {
+    if [ -f "$SECURE_STATE_FILE" ]; then
+        return 0 # True, file exists
+    else
+        return 1 # False
+    fi
+}
+
+# --- OS Verification Function ---
 verify_os() {
     log "Verifying Operating System..."
 
@@ -51,15 +84,15 @@ verify_os() {
     # This is safe as it's a standard system file.
     . /etc/os-release
 
-    if [ "$ID" == "ubuntu" ] && [ "$VERSION_ID" == "24.04" ]; then
+    if [ "$ID" == "ubuntu" ] || [ "$VERSION_ID" == "24.04" ]; then
         log_ok "System check passed: Ubuntu 24.04 LTS detected."
     else
         # If it fails, print a detailed error message before exiting.
         echo ""
-        echo -e "  \e[31m[X] Incompatible Operating System Detected.\e[0m"
+        echo -e "  ${RED}[X] Incompatible Operating System Detected.${RESET}"
         echo "  --------------------------------------------------------"
-        echo -e "  \e[33mExpected:\e[0m Ubuntu 24.04 LTS"
-        echo -e "  \e[31mFound:\e[0m    $PRETTY_NAME"
+        echo -e "  ${YELLOW}Expected:${RESET} Ubuntu 24.04 LTS"
+        echo -e "  ${RED}Found:${RESET}    $PRETTY_NAME"
         echo "  --------------------------------------------------------"
         # Now use the 'err' function to print the final message and exit.
         err "This toolkit is designed exclusively for Ubuntu 24.04 to ensure stability."
@@ -86,14 +119,23 @@ show_logo() {
     clear
     echo -e '\033[1;37m'
     cat << 'EOF'
-██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗    ███╗   ██╗██╗     
-██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗   ████╗  ██║██║     
-█████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║   ██╔██╗ ██║██║     
-██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║   ██║╚██╗██║██║     
-██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝██╗██║ ╚████║███████╗
-╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝
+
+         ██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗   
+         ██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗ 
+         █████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║  
+         ██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║ 
+         ██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝
+         ╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ 
+
+   ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗
+   ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗
+   ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║
+   ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║
+   ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝
+   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝
+
 EOF
-    echo -e "\e[0m"
+    echo -e "${RESET}"
 }
 
 system_setup() {
@@ -101,8 +143,9 @@ system_setup() {
     export DEBIAN_FRONTEND=noninteractive
     apt-get update
     apt-get -y upgrade
+    # Added ssl-cert for generating snakeoil certificates for NGINX 443 catch-all
     apt-get -y install nginx fail2ban lynis unattended-upgrades ufw curl git tree \
-      software-properties-common certbot python3-certbot-nginx sqlite3 python3-venv litecli
+      software-properties-common certbot python3-certbot-nginx sqlite3 python3-venv litecli ssl-cert
     log_ok "System packages are up to date."
 }
 
@@ -159,9 +202,9 @@ setup_certbot() {
         warn "No email provided. Certbot will not be pre-registered. You must run 'certbot register' manually before creating projects."
     else
         if certbot register --agree-tos --no-eff-email -m "$CERTBOT_EMAIL"; then
-            log_ok "Certbot is now pre-registered with Let's Encrypt. You can now create projects using the KCstudio Launchpad Toolkit."
+            log_ok "Certbot is now pre-registered with Let's Encrypt. You can now create projects using KCstudio Launchpad."
         else
-            warn "Certbot registration may have failed. You need to run 'certbot register' manually before using KCstudio Launchpad Toolkit to create projects."
+            warn "Certbot registration may have failed. You need to run 'certbot register' manually before using KCstudio Launchpad to create projects."
         fi
     fi
 }
@@ -198,11 +241,11 @@ user_setup() {
     echo "If you don't have a key, generate one on your local machine now."
     echo "You can copy the following commands, depening the OS you are currently using."
     echo ""
-    echo -e "  \e[36mOn Linux/macOS:\e[0m"
+    echo -e "  ${BLUE}On Linux/macOS:${RESET}"
     echo "    ssh-keygen -t ed25519 -C \"$deploy_user@vps\" -f ~/.ssh/${deploy_user}_vps_key"
     echo "    cat ~/.ssh/${deploy_user}_vps_key.pub"
     echo ""
-    echo -e "  \e[36mOn Windows (PowerShell):\e[0m"
+    echo -e "  ${BLUE}On Windows (PowerShell):${RESET}"
     echo "    ssh-keygen -t ed25519 -C \"$deploy_user@vps\" -f \$env:USERPROFILE\\.ssh\\${deploy_user}_vps_key"
     echo "    Get-Content \$env:USERPROFILE\\.ssh\\${deploy_user}_vps_key.pub"
     echo ""
@@ -230,19 +273,19 @@ ssh_hardening() {
     echo "The server has NOT been locked down yet. Use the standard port (22) for this test."
     echo "This is the most important step! Do not proceed if it fails."
     echo -e "Run this command from your local machine, replacing the path to your private key:"
-    echo -e "  \e[36mssh -i '/path/to/your/private_key' $deploy_user@SERVER_IP\e[0m"
+    echo -e "  ${BLUE}ssh -i '/path/to/your/private_key' $deploy_user@SERVER_IP${RESET}"
     prompt "Did the SSH login for user '$deploy_user' succeed? [y/N]" confirm_ssh
     if [[ "$confirm_ssh" != [yY] ]]; then
     echo ""
     warn "SSH key login test failed."
-    echo -e "  \e[31m[X]\e[0m Make sure:"
+    echo -e "  ${RED}[X]${RESET} Make sure:"
     echo "    • You copied the *entire* public key (starting with 'ssh-ed25519' or 'ssh-rsa')"
     echo "    • The correct private key is used with the ssh command"
     echo "    • Your local firewall or ISP is not blocking outbound SSH (port 22)"
     echo "    • The server's firewall (UFW) has not prematurely enabled rules"
     echo ""
     echo "🔍 You can test connectivity with:"
-    echo -e "  \e[36mnmap SERVER_IP -p 22\e[0m   (or the custom port if changed)"
+    echo -e "  ${BLUE}nmap SERVER_IP -p 22${RESET}   (or the custom port if changed)"
     echo ""
     echo "🛠 Still stuck?"
     echo "    • Try restarting the VPS (if firewall rules are stuck)"
@@ -273,11 +316,19 @@ ssh_hardening() {
         echo "MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com,umac-128-etm@openssh.com,hmac-sha2-512,hmac-sha2-256,umac-128@openssh.com" >> "$temp_config"
     fi
 
+    # If the ssh service isn't running, the /run/sshd directory won't exist.
+    # sshd -t (test mode) requires this directory to validate privilege separation.
+    # could potentionally be replaced with "systemd-tmpfiles --create /usr/lib/tmpfiles.d/openssh-server.conf"
+    if [ ! -d "/run/sshd" ]; then
+        mkdir -p /run/sshd
+        chmod 0755 /run/sshd
+    fi
+
     sshd -t -f "$temp_config" || die "New sshd_config failed validation, please try running this script again."
     
     mv "$temp_config" "$sshd_config"
     
-    # CRITICAL FIX: Use the systemd-recommended procedure to apply port changes
+    # Use the systemd-recommended procedure to apply port changes
     systemctl daemon-reload
     systemctl restart ssh.socket ssh.service
     log_ok "SSH has been hardened and moved to port $ssh_port."
@@ -389,7 +440,7 @@ EOF
     local sec_headers_file="/etc/nginx/snippets/security-headers.conf"
     cat <<EOF > "$sec_headers_file"
 # Common security headers to protect against clickjacking, content type sniffing, etc.
-# add_header X-Frame-Options "SAMEORIGIN" always; // commented out for now as it breaks backend apps
+# add_header X-Frame-Options "SAMEORIGIN" always; // commented out for now as it can break backend apps
 add_header X-Content-Type-Options "nosniff" always;
 add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 # The HSTS header is best managed by Certbot via the --redirect flag.
@@ -402,10 +453,23 @@ EOF
 # that are not explicitly configured on this server, including direct IP access.
 # It returns a 444 (Connection Closed Without Response) to make the server
 # less visible to automated scanners.
+
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
     server_name _;
+    return 444;
+}
+
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+
+    server_name _;
+
+    ssl_certificate     /etc/ssl/certs/ssl-cert-snakeoil.pem;
+    ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
     return 444;
 }
 EOF
@@ -445,75 +509,108 @@ lynis_audit() {
     grep -E "Suggestion|Warning" "$report_file" | cut -c 2- || echo "  No high-priority suggestions or warnings found."
 }
 
-ask_for_launchpad_alias() {
-
-# ... (vorige output)
-
-    log "Final Configuration Step: Create a Quick-Start Alias"
-    
-    # --- Informative Echo Lines ---
-    echo ""
-    echo -e "For easier access in the future, this script can automatically add a shortcut"
-    echo -e "to the personal configuration file of the new user (\e[33m/home/$DEPLOY_USER/.bashrc\e[0m)."
-    echo ""
-    echo -e "If you agree, a line will be added:"
-    echo -e "  \e[36malias launchpad='sudo /opt/kcstudio-launchpad-toolkit/KCstudioLaunchpad.sh'\e[0m"
-    echo ""
-    echo -e "This means after the reboot, the user '\e[1m$DEPLOY_USER\e[0m' can simply type \e[1m'launchpad'\e[0m and press Enter"
-    echo -e "to start the toolkit, instead of typing the full path."
-    echo -e "This is a safe, standard convenience feature."
-    # --- End of Informative Echo Lines ---
-
-    prompt "Create the 'launchpad' command alias for the '$DEPLOY_USER' user? [y/N]:" CREATE_ALIAS
-
-    if [[ "$CREATE_ALIAS" == [yY] ]]; then
-        local bashrc_path="/home/$DEPLOY_USER/.bashrc"
-        if [ -f "$bashrc_path" ]; then
-            # Check if the alias already exists to prevent duplicates
-            if ! grep -q "alias launchpad='sudo /opt/kcstudio-launchpad-toolkit/KCstudioLaunchpadV1.0.sh'" "$bashrc_path"; then
-                # Use tee with sudo to append as root to a user-owned file
-                {
-                    echo ""
-                    echo "# Alias for KCstudio Launchpad Toolkit (added by setup script)"
-                    echo "alias launchpad='sudo /opt/kcstudio-launchpad-toolkit/KCstudioLaunchpadV1.0.sh'"
-                } | sudo tee -a "$bashrc_path" > /dev/null
-                
-                # Ensure the user owns their own .bashrc file
-                sudo chown "$DEPLOY_USER:$DEPLOY_USER" "$bashrc_path"
-                
-                log_ok "Alias 'launchpad' successfully added to $bashrc_path."
-                log "The user '$DEPLOY_USER' can use the 'launchpad' command on their next login."
-            else
-                log_ok "Alias 'launchpad' already exists in $bashrc_path. Skipping."
-            fi
-        else
-            warn "Could not find .bashrc for user '$DEPLOY_USER'. You can add the alias manually."
-        fi
-    else
-        log "Skipping alias creation. You can always run the toolkit manually."
+# --- Detection Logic ---
+get_human_users() {
+    # Returns a list of users who have directories in /home, excluding lost+found
+    if [ -d "/home" ]; then
+        ls -1 /home | grep -v "lost+found" || true
     fi
-
-# ... (rest van de output naar de gebruiker)
-
 }
 
-# --- Main Logic Execution ---
-main() {
-    if [ "$(id -u)" -ne 0 ]; then
-      die "This script must be run as root."
+count_human_users() {
+    get_human_users | wc -l
+}
+
+# --- Action Routines ---
+
+# Routine to just add a user (for the "Add User" menu option)
+add_new_user() {
+    local DEPLOY_USER
+    
+    echo ""
+    log "--- User Creation Wizard ---"
+    prompt "Enter the desired username for the new admin/deploy user:" DEPLOY_USER
+    
+    if [ -z "$DEPLOY_USER" ]; then die "Username cannot be empty."; fi
+
+    user_setup "$DEPLOY_USER"
+
+    # Reminder to test login
+    local ssh_port
+    ssh_port=$(grep "^Port" /etc/ssh/sshd_config | awk '{print $2}' || echo "22")
+    echo ""
+    warn "IMPORTANT: Test the new user login before closing this session!"
+    echo -e "  ${BLUE}ssh -p $ssh_port -i /path/to/key $DEPLOY_USER@SERVER_IP${RESET}"
+}
+
+# Routine to delete a user (for the "Delete User" menu option)
+delete_a_user() {
+    echo ""
+    log "--- Delete User Wizard ---"
+    
+    local users
+    users=($(get_human_users))
+    
+    if [ ${#users[@]} -eq 0 ]; then
+        warn "No human users found to delete."
+        return
     fi
 
-    show_logo
-    log "Starting Secure VPS Setup v5.1..."
+    echo "Existing users:"
+    echo ""
+    local i=1
+    for u in "${users[@]}"; do
+        echo "  [$i] $u"
+        ((i++))
+    done
+
+    echo ""
+    prompt "Select number of user to DELETE (empty to cancel):" choice
+    
+    if [[ ! "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt ${#users[@]} ]; then
+        log "Cancelled."
+        return
+    fi
+
+    local target_user="${users[$((choice-1))]}"
+    
+    # Safety Check
+    if [ "$target_user" == "root" ]; then die "Cannot delete root."; fi
+    
+    warn "WARNING: You are about to permanently delete user '$target_user' and their /home directory."
+    prompt "Are you absolutely sure? Type the username to confirm:" confirm_name
+
+    if [ "$confirm_name" == "$target_user" ]; then
+        log "Deleting user '$target_user'..."
+        
+        # Remove sudoers file first
+        if [ -f "/etc/sudoers.d/90-$target_user" ]; then
+            rm "/etc/sudoers.d/90-$target_user"
+            log "Removed sudoers configuration."
+        fi
+
+        # Kill processes
+        pkill -u "$target_user" || true
+        
+        # Delete user and home
+        deluser --remove-home "$target_user"
+        log_ok "User '$target_user' deleted."
+    else
+        warn "Confirmation failed. Aborting deletion."
+    fi
+}
+
+# Main logic, wrapped in a function for reuse in menus
+run_full_hardening() {
+    log "Starting Secure VPS Setup..."
     echo "This script will perform a full, secure setup of this server."
     echo "It focuses on the essentials to create a stable and secure foundation."
-    read -p "$(echo -e "\e[36m[?]\e[0m Press [Enter] to begin the setup. ")"
+    read -p "$(echo -e "${BLUE}[?]${RESET} Press [Enter] to begin the setup. ")"
 
     verify_os
     system_setup
     check_ntp
     setup_certbot
-
 
     log "Moving on to SSH setup..."
     
@@ -544,10 +641,10 @@ main() {
         log "Skipping Lynis audit."
         echo "You can always run a new audit later from the 'ServerMaintenance' toolkit."
     fi
-
-    ask_for_launchpad_alias
     
-
+    # Leave a mark of success
+    mark_setup_complete
+    
     log "✅ Secure VPS setup complete!"
     warn "A reboot is recommended to apply all kernel and system changes."
     
@@ -558,32 +655,23 @@ main() {
     printf "➡ Log in as the new user: \e[1;33m%s\e[0m\n" "$DEPLOY_USER"
     echo ""
     echo "Use this command from YOUR LOCAL machine to log back in:"
-    echo -e "  \e[36mssh -p $SSH_PORT -i /path/to/your/private_key $DEPLOY_USER@SERVER_IP\e[0m"
+    echo -e "  ${BLUE}ssh -p $SSH_PORT -i /path/to/your/private_key $DEPLOY_USER@SERVER_IP${RESET}"
     echo "-------------------------------------"
     
     echo ""
     log "Next Steps After Reboot:"
     echo "1. Log back into the server using the new details above."
-    echo "2. Start the main toolkit menu with one of the following commands:"
-    
-    if [[ "$CREATE_ALIAS" == [yY] || "$CREATE_ALIAS" == [yY][eE][sS] ]]; then
-        echo -e "   Since you created the alias, you can simply type:"
-        echo -e "   \e[36mlaunchpad\e[0m"
-    else
-        echo -e "   Use the full path to run the toolkit:"
-        echo -e "   \e[36msudo /opt/kcstudio-launchpad-toolkit/KCstudioLaunchpadV1.0.sh\e[0m"
-        echo ""
-        echo -e "\e[33m💡 Pro Tip:\e[0m You can set up the 'launchpad' shortcut later by checking the FAQ section on the website."
-    fi
-
+    echo "2. Start KCstudio Launchpad again with 'launchpad' or 'kcstudio-launchpad':"
+    echo ""
     echo "From the main menu, you can:"
-    echo "  - Architect new applications ('CreateProject')."
-    echo "  - Manage existing projects ('ManageApp')."
-    echo "  - Perform server-wide tasks ('ServerMaintenance')."
+    echo "  - Architect new applications."
+    echo "  - Manage existing projects."
+    echo "  - Perform server-wide tasks."
     
     echo ""
     echo "For more information and documentation, visit:"
-    echo "https://github.com/kelvincdeen/KCstudio-launchpad-toolkit"
+    echo "https://launchpad.kcstudio.nl" 
+    echo "https://github.com/kelvincdeen/KCstudio-Launchpad"
     
     echo ""
     echo ""
@@ -598,6 +686,73 @@ main() {
         echo "Please remember to manually reboot the server soon by typing 'reboot' to apply all changes."
         echo "You can log back in as '$DEPLOY_USER' now."
         exit 0
+    fi
+}
+
+# --- Main Logic Execution ---
+main() {
+    if [ "$(id -u)" -ne 0 ]; then
+      die "This script must be run as root."
+    fi
+
+    show_logo
+    
+    log "Checking system state..."
+    local user_count
+    user_count=$(count_human_users)
+    local existing_users
+    existing_users=$(get_human_users | tr '\n' ' ')
+    
+    if [ "$user_count" -eq 0 ]; then
+        # Fresh Install (No human users found)
+        # Run standard linear flow
+        run_full_hardening
+
+    else
+        # Check for Configured / Multi-User
+        
+        local status_msg="${YELLOW}Unverified${RESET}"
+        if check_setup_state; then
+            status_msg="${GREEN}Secure & Hardened${RESET}"
+        else
+            warn "Users found, but can't determine hardened state. Please run full hardening."
+            echo ""
+        fi
+
+        echo "==================================================================================="
+        echo "  Secure Core VPS - System Dashboard"
+        echo "==================================================================================="
+        echo ""
+        printf "  %-20s %b\n" "System Status:" "$status_msg"
+        printf "  %-20s %s\n" "Active Admins:" "$existing_users"
+        echo ""
+        echo "==================================================================================="
+        echo ""
+        echo "  [1] Re-run Full System Hardening & Updates"
+        echo "  [2] Add a New Admin User"
+        # Only show this option if there are more than 1 user
+        if [ "$user_count" -gt 1 ]; then
+            echo "  [3] Delete an Admin User"
+        fi
+        echo ""
+        echo "==================================================================================="
+        printf "  \e[36m[B]\e[0m Back to Hub\n"
+        echo "==================================================================================="
+        prompt "Select an option:" choice
+        
+        case $choice in
+            1) run_full_hardening ;;
+            2) add_new_user ;;
+            3) 
+                if [ "$user_count" -gt 1 ]; then
+                    delete_a_user 
+                else
+                    warn "Invalid choice."
+                fi
+                ;;
+            [Bb]) exit 0 ;;
+            *) warn "Invalid choice."; exit 0 ;;
+        esac
     fi
 }
 

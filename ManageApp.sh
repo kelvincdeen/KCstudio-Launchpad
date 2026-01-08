@@ -1,43 +1,36 @@
 #!/bin/bash
 
-# === KCStudio.nl ADVANCED PROJECT OPERATOR v4.3 ===
-# The Definitive Project Management & Maintenance Toolkit
-#
+# === KCStudio Launchpad - Advanced Project Management ===
+# Copyright (c) 2026 Kelvin Deen - KCStudio.nl
 
 set -euo pipefail
 IFS=$'\n\t'
 
+# --- Colors (Standardized) ---
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[1;33m'
+BLUE='\033[36m'
+ORANGE='\033[0;33m'
+DARKGRAY='\033[0;33m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
+
 # --- Helper Functions ---
-log() { echo -e "\n[+] $1"; }
-log_ok() { echo -e "  \e[32m✔\e[0m $1"; }
-log_warn() { echo -e "  \e[33m!\e[0m $1"; }
-log_err() { echo -e "\n[!] \e[31m$1\e[0m"; } # No exit, for non-fatal errors
-err() { log_err "$1" >&2; exit 1; }
-
-# --- Menu Display Functions ---
-show_logo() {
-    echo -e '\033[1;37m'
-    cat << 'EOF'
-██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗    ███╗   ██╗██╗
-██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗   ████╗  ██║██║
-█████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║   ██╔██╗ ██║██║
-██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║   ██║╚██╗██║██║
-██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝██╗██║ ╚████║███████╗
-╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝
-EOF
-    echo -e "\e[0m" # Reset color
-}
-
-pause() {
-    echo ""
-    read -rp "Press [Enter] to return to the menu..."
-}
+log() { echo -e "\n${GREEN}[+]${RESET} $1"; }
+log_ok() { echo -e "  ${GREEN}✔${RESET} $1"; }
+log_warn() { echo -e "  ${YELLOW}!${RESET} $1"; }
+log_err() { echo -e "\n${RED}[!]${RESET} $1"; } # No exit
+warn() { echo -e "\n${YELLOW}[!]${RESET} $1"; }
+err() { echo -e "\n${RED}[X]${RESET} $1" >&2; exit 1; }
+prompt() { read -rp "$(echo -e "${BLUE}[?]${RESET} $1 ")" "$2"; }
+pause() { echo ""; read -rp "Press [Enter] to continue..."; }
 
 check_dep() {
     if ! command -v "$1" &> /dev/null; then
-        log_warn "'$1' command not found. This feature requires it."
-        read -rp "Would you like to try and install it now? (y/N)" choice
-        if [[ "$choice" == [yY] ]]; then
+        warn "'$1' command not found. This feature requires it."
+        prompt "Would you like to try and install it now? (y/N)" choice
+        if [[ "$choice" =~ ^[yY]$ ]]; then
             sudo apt-get update && sudo apt-get install -y "$1"
         else
             return 1
@@ -46,6 +39,29 @@ check_dep() {
     return 0
 }
 
+# --- UI Functions ---
+show_logo() {
+    clear
+    echo -e '\033[1;37m'
+    cat << 'EOF'
+
+         ██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗   
+         ██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗ 
+         █████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║  
+         ██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║ 
+         ██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝
+         ╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ 
+
+   ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗
+   ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗
+   ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║
+   ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║
+   ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝
+   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝
+
+EOF
+    echo -e "${RESET}"
+}
 
 # --- Global & Project Variables ---
 PROJECT_ROOT="/var/www"
@@ -66,6 +82,71 @@ list_all_domains() {
         )
     done
     echo "----------------------------------------------------------------------------------------------------"
+    pause
+}
+
+show_traffic_stats_all_projects() {
+    log "Aggregating NGINX Traffic Statistics for all Projects..."
+    warn "This can take a moment on servers with very large log files."
+
+    local thirty_days_ago
+    thirty_days_ago=$(date -d "30 days ago" +%s)
+    local twenty_four_hours_ago
+    twenty_four_hours_ago=$(date -d "24 hours ago" +%s)
+
+    echo "--------------------------------------------------------------------------------------------------------"
+    printf "%-35s | %-20s | %-20s | %-20s\n" "DOMAIN" "TOTAL HITS" "HITS (LAST 30D)" "HITS (LAST 24H)"
+    echo "--------------------------------------------------------------------------------------------------------"
+
+    while IFS= read -r conf_file; do
+        # shellcheck source=/dev/null
+        source <(sudo cat "$conf_file")
+
+        process_log() {
+            local domain_name=$1
+            local log_type=$2 # 'api' or 'web'
+            local log_pattern="/var/log/nginx/${PROJECT}-${log_type}.access.log*"
+
+            if ! ls ${log_pattern} 1> /dev/null 2>&1; then return; fi
+
+            local log_stream
+            log_stream=$(sudo find /var/log/nginx/ -name "${PROJECT}-${log_type}.access.log*" -print0 | xargs -0 sudo zcat -f)
+
+            if [ -z "$log_stream" ]; then continue; fi
+
+            local total_hits
+            total_hits=$(echo "$log_stream" | wc -l)
+
+            local recent_hits
+            recent_hits=$(echo "$log_stream" | awk -v d30="$thirty_days_ago" -v d24="$twenty_four_hours_ago" '
+                BEGIN {
+                    m["Jan"]=1; m["Feb"]=2; m["Mar"]=3; m["Apr"]=4; m["May"]=5; m["Jun"]=6;
+                    m["Jul"]=7; m["Aug"]=8; m["Sep"]=9; m["Oct"]=10; m["Nov"]=11; m["Dec"]=12
+                }
+                {
+                    gsub(/\[|\]/, "", $4);
+                    split($4, a, /[\/:]/);
+                    ts = mktime(a[3] " " m[a[2]] " " a[1] " " a[4] " " a[5] " " a[6]);
+                    if (ts > d30) h30++;
+                    if (ts > d24) h24++;
+                }
+                END { print h30+0, h24+0 }
+            ')
+
+            local hits_30d
+            hits_30d=$(echo "$recent_hits" | awk '{print $1}')
+            local hits_24h
+            hits_24h=$(echo "$recent_hits" | awk '{print $2}')
+
+            printf "%-35s | %-20s | %-20s | %-20s\n" "$domain_name" "$total_hits" "$hits_30d" "$hits_24h"
+        }
+
+        if [[ -n "$API_DOMAIN" ]]; then process_log "$API_DOMAIN" "api"; fi
+        if [[ -n "$FRONTEND_DOMAIN" ]]; then process_log "$FRONTEND_DOMAIN" "web"; fi
+
+    done < <(sudo find "$PROJECT_ROOT" -maxdepth 2 -type f -name "project.conf")
+
+    echo "--------------------------------------------------------------------------------------------------------"
     pause
 }
 
@@ -90,18 +171,23 @@ if [ -z "$PROJECT_NAME_ARG" ]; then
         err "No valid projects found in '$PROJECT_ROOT'."
     fi
 
-    echo "Please select a project to manage (or 'A' to list all domains):"
-select project in "${AVAILABLE_PROJECTS[@]}"; do
-    if [[ "$REPLY" =~ ^[Aa]$ ]]; then
-        list_all_domains
-        continue
-    elif [[ -n "$project" ]]; then
-        PROJECT_NAME_ARG="$project"
-        break
-    else
-        echo "Invalid selection."
-    fi
-done
+    echo "Please select a project to manage (or 'A' to list all domains, or 'T' to show traffic stats): "
+    select project in "${AVAILABLE_PROJECTS[@]}"; do
+        if [[ "$REPLY" =~ ^[Aa]$ ]]; then
+            list_all_domains
+            clear; show_logo; log "Searching for available projects..."; echo "Please select a project to manage (or 'A' to list all domains, or 'T' to show traffic stats): "
+            continue
+        elif [[ "$REPLY" =~ ^[Tt]$ ]]; then
+            show_traffic_stats_all_projects
+            clear; show_logo; log "Searching for available projects..."; echo "Please select a project to manage (or 'A' to list all domains, or 'T' to show traffic stats): "
+            continue
+        elif [[ -n "$project" ]]; then
+            PROJECT_NAME_ARG="$project"
+            break
+        else
+            warn "Invalid choice."
+        fi
+    done
 fi
 
 PROJECT_CONF_PATH="$PROJECT_ROOT/$PROJECT_NAME_ARG/project.conf"
@@ -109,51 +195,138 @@ PROJECT_CONF_PATH="$PROJECT_ROOT/$PROJECT_NAME_ARG/project.conf"
 
 log "Loading manifest for project '$PROJECT_NAME_ARG'..."
 source <(sudo cat "$PROJECT_CONF_PATH")
-log_ok "Project manifest loaded successfully."
+# log_ok "Project manifest loaded successfully."
 
 BACKEND_SERVICES=()
 for comp in "${SELECTED_COMPONENTS[@]}"; do [[ "$comp" != "website" ]] && BACKEND_SERVICES+=("$comp"); done
 APP_USER="app_$PROJECT"
 
+# --- Universal Upload Helper ---
+prompt_and_upload_file() {
+    local file_path="$1"
+    echo ""
+    if [ ! -f "$file_path" ]; then
+        log_err "Upload function called with invalid file: $file_path"
+        return
+    fi
+
+    local filename
+    filename=$(basename "$file_path")
+    read -rp "$(echo -e "\e[36m[?]\e[0m Upload '$filename' and get a shareable link? [y/N] ")" choice
+
+    if [[ "$choice" =~ ^[yY]$ ]]; then
+        log "Uploading file..."
+        
+        local response_with_code
+        response_with_code=$(curl -# -w "\n%{http_code}" -F "file=@$file_path" https://TUI-transfer.kcstudio.nl/upload?qrcode)
+        
+        local http_code
+        http_code=$(echo "$response_with_code" | tail -n1)
+        local response_body
+        response_body=$(echo "$response_with_code" | sed '$d')
+
+        echo ""
+
+        if [ "$http_code" -eq 200 ]; then
+            echo "$response_body" 
+            echo ""
+            log_ok "Upload complete! Your link is available above."
+        else
+            log_err "Upload failed. The server responded with HTTP status: $http_code"
+            if [ -n "$response_body" ]; then warn "$response_body"; fi
+        fi
+    else
+        log "Skipping upload. Your file remains locally at: $file_path"
+    fi
+}
+
 # --- Menu and Action Functions ---
 
 select_component() {
-  local prompt_message="$1"
-  local -n components_array=$2
+    local prompt_message="$1"
+    local -n components_array=$2
 
-  echo ""
-  echo "$prompt_message"
-  select comp in "${components_array[@]}"; do
-    if [[ -n "$comp" ]]; then
-      REPLY="$comp"
-      return 0
-    else
-      echo "Invalid selection."
+    if [ ${#components_array[@]} -eq 0 ]; then
+        log_err "No components available."
+        return 1
     fi
-  done
+
+    echo ""
+    echo "$prompt_message"
+    echo ""
+
+    local i=1
+    for comp in "${components_array[@]}"; do
+        printf "  [%d] %s\n" "$i" "$comp"
+        ((i++))
+    done
+    echo ""
+    echo "  [B] Back"
+    echo ""
+
+    prompt "Your choice: " choice
+
+    # Back
+    if [[ "$choice" =~ ^[Bb]$ ]]; then
+        return 1
+    fi
+
+    # Numeric selection
+    if [[ "$choice" =~ ^[0-9]+$ ]]; then
+        local index=$((choice - 1))
+        if (( index >= 0 && index < ${#components_array[@]} )); then
+            REPLY="${components_array[$index]}"
+            return 0
+        fi
+    fi
+
+    warn "Invalid choice."
+    return 1
+}
+
+
+# --- Helper for show components ---
+print_list() {
+    local label="$1"
+    shift
+    local items=("$@")
+
+    printf "  %-20s:\n" "$label"
+    if [ ${#items[@]} -eq 0 ]; then
+        printf "    - None\n"
+    else
+        for item in "${items[@]}"; do
+            printf "    - %s\n" "$item"
+        done
+    fi
 }
 
 # --- Core Functions ---
 show_info() {
     log "Project Information for '$PROJECT'"
     echo "------------------------------------------"
+    echo ""
     printf "  %-20s: %s\n" "Project Name" "$PROJECT"
     printf "  %-20s: %s\n" "Path" "$APP_PATH"
+
     if [[ "$HAS_WEBSITE" == "true" ]]; then
-      printf "  %-20s: %s\n" "Frontend Domain" "https://$FRONTEND_DOMAIN"
+        printf "  %-20s: %s\n" "Frontend Domain" "https://$FRONTEND_DOMAIN"
     fi
+
     if [[ "$HAS_BACKEND" == "true" ]]; then
-       printf "  %-20s: %s\n" "API Base URL" "https://$API_DOMAIN/v1/"
+        printf "  %-20s: %s\n" "API Base URL" "https://$API_DOMAIN/v1/"
     fi
+
     echo ""
-    printf "  %-20s: %s\n" "Installed Components" "${SELECTED_COMPONENTS[*]}"
-    printf "  %-20s: %s\n" "Backend Services" "${BACKEND_SERVICES[*]:-None}"
+    print_list "Installed Components" "${SELECTED_COMPONENTS[@]}"
+    echo ""
     echo "------------------------------------------"
 }
 
+
 restart_component() {
   if [ ${#BACKEND_SERVICES[@]} -eq 0 ]; then log_err "No backend services to restart."; return; fi
-  select_component "Which backend service do you want to restart?" BACKEND_SERVICES
+  if ! select_component "Which backend service do you want to restart?" BACKEND_SERVICES ; then return; fi
   local comp="$REPLY"
   log "Restarting '$comp' service for project '$PROJECT'..."
   sudo systemctl restart "$PROJECT-$comp.service"
@@ -172,25 +345,25 @@ view_logs() {
   echo "What would you like to do?"
   echo "1) View last 10 lines of each backend's logs"
   echo "2) Tail live logs for a specific backend"
-  read -rp "Enter choice [1-2]: " log_choice
+  prompt "Enter choice [1-2]: " log_choice
 
   case "$log_choice" in
     1)
       log "Showing last 10 lines of logs for all backend services:"
       for comp in "${BACKEND_SERVICES[@]}"; do
         echo "------------------ $comp ------------------"
-        sudo tail -n 10 "$APP_PATH/logs/$comp/output.log" || log_warn "Could not read log for $comp"
+        sudo tail -n 10 "$APP_PATH/logs/$comp/output.log" || warn "Could not read log for $comp"
         echo ""
       done
       ;;
     2)
-      select_component "Which backend service's logs do you want to view (live)?" BACKEND_SERVICES
+      if ! select_component "Which backend service's logs do you want to view (live)?" BACKEND_SERVICES ; then return; fi
       local comp="$REPLY"
       log "Tailing logs for '$comp'. Press Ctrl+C to stop."
-      sudo tail -f "$APP_PATH/logs/$comp/output.log"
+      sudo tail -f "$APP_PATH/logs/$comp/output.log" || true
       ;;
     *)
-      log_warn "Invalid choice."
+      warn "Invalid choice."
       ;;
   esac
 }
@@ -246,6 +419,67 @@ reload_nginx() {
   fi
 }
 
+# --- NGINX Log Viewer (Grouped) ---
+tail_nginx_logs() {
+    log "NGINX Log Viewer for '$PROJECT'"
+    echo "--- Frontend ---"
+    echo "  [1] Tail Access Logs"
+    echo "  [2] Tail Error Logs"
+    echo "--- Backend ---"
+    echo "  [3] Tail Access Logs"
+    echo "  [4] Tail Error Logs"
+    echo "--- Everything ---"
+    echo "  [5] Tail All Logs"
+    echo ""
+    echo "  [B] Back"
+    prompt "Choice:" lchoice
+
+    case $lchoice in
+        1) sudo tail -f /var/log/nginx/${PROJECT}-web.access.log || true ;;
+        2) sudo tail -f /var/log/nginx/${PROJECT}-web.error.log || true ;;
+        3) sudo tail -f /var/log/nginx/${PROJECT}-api.access.log || true ;;
+        4) sudo tail -f /var/log/nginx/${PROJECT}-api.error.log || true ;;
+        5) sudo tail -f /var/log/nginx/${PROJECT}-*.log || true ;;
+        [Bb]) return ;;
+        *) warn "Invalid choice." ;;
+    esac
+}
+
+# --- Edit & Reload NGINX Wrapper ---
+edit_and_reload_nginx() {
+    log "Edit NGINX Configuration"
+    echo "Select which NGINX file to edit:"
+    echo "  [1] Frontend Config for: ($FRONTEND_DOMAIN)"
+    echo "  [2] Backend API Config for: ($API_DOMAIN)"
+    echo ""
+    prompt "Your choice: " ng_choice
+
+    local file_to_edit=""
+    case $ng_choice in
+        1) file_to_edit="/etc/nginx/sites-available/${PROJECT}-web.conf" ;;
+        2) file_to_edit="/etc/nginx/sites-available/${PROJECT}-api.conf" ;;
+        *) warn "Cancelled."; return ;;
+    esac
+
+    if [ ! -f "$file_to_edit" ]; then warn "File $file_to_edit not found."; return; fi
+
+    log "Opening $file_to_edit..."
+    sudo nano "$file_to_edit"
+
+    log "Testing NGINX syntax..."
+    if sudo nginx -t; then
+        prompt "Syntax OK. Reload NGINX now? (y/N)" reload_conf
+        if [[ "$reload_conf" =~ ^[yY]$ ]]; then
+            sudo systemctl reload nginx
+            log_ok "NGINX reloaded."
+        else
+            log "Reload skipped."
+        fi
+    else
+        err "Syntax Check FAILED. NGINX was NOT reloaded. Please fix errors."
+    fi
+}
+
 reload_website() {
   if ! [[ "$HAS_WEBSITE" == "true" ]]; then
     log_err "No 'website' component found for this project."
@@ -281,8 +515,8 @@ rotate_jwt_secret() {
     if [ ${#BACKEND_SERVICES[@]} -eq 0 ]; then log_err "No backend services found to rotate JWT secret for."; return; fi
 
     log_err "SECURITY WARNING: JWT Secret Rotation"
-    log_warn "This action will generate a new master key for signing all session tokens for project '$PROJECT'."
-    log_warn "This will immediately invalidate ALL active user sessions, forcing everyone to log in again."
+    warn "This action will generate a new master key for signing all session tokens for project '$PROJECT'."
+    warn "This will immediately invalidate ALL active user sessions, forcing everyone to log in again."
     echo ""
     read -rp "Are you absolutely sure you want to proceed? (y/N): " confirm
     if [[ "$confirm" != [yY] ]]; then
@@ -326,10 +560,10 @@ deploy_code_local() {
     echo ""
     echo "  \e[33mImportant:\e[0m Always deploy from a clean, complete copy of your code."
 
-    select_component "Which component do you want to deploy new code to?" all_components
+    if ! select_component "Which component do you want to deploy new code to?" all_components ; then return; fi
     local comp="$REPLY"
 
-    read -rp "Enter the full path to the source directory containing the new code for '$comp': " source_path
+    prompt "Enter the full path to the source directory containing the new code for '$comp': " source_path
     if [ ! -d "$source_path" ]; then
         log_err "Source directory not found: $source_path"
         return
@@ -355,7 +589,7 @@ deploy_code_local() {
         echo -e "  \e[36msudo rsync -av \"$source_path/\" \"$dest_path\" --exclude=\"venv/\" --exclude=\"*.db\"\e[0m"
     fi
 
-    read -rp "Are you sure you want to proceed with deployment to '$comp'? (y/N): " confirm
+    prompt "Are you sure you want to proceed with deployment to '$comp'? (y/N): " confirm
     if [[ "$confirm" != [yY] ]]; then
         echo "Deployment cancelled."
         return
@@ -388,26 +622,22 @@ deploy_code_url() {
 
     log "Deploy New Code from URL"
     echo "This tool downloads an archive (zip, tar.gz), shows its contents, and deploys it to a component."
-    log "💡 Tip: Uploading Your Deployment Archive"
     echo ""
-    printf "\n\e[33m%s\e[0m\n" "Need to deploy a local zip or tar.gz file?"
-    printf " You can upload it first to a trusted temporary hosting service such as:\n"
-    printf "  - \e[36mhttps://file.io\e[0m\n"
-    printf "  - \e[36mhttps://tmpfiles.org\e[0m\n"
-    printf "\nThen copy the download URL and paste it below when prompted.\n"
-    printf "Your archive will be downloaded and deployed to the selected component.\n"
-    pause
+    log "💡 Recommended Method: Use the KCstudio Transfer Service"
+    printf "\n\e[33m%s\e[0m\n" "To easily get a URL for your local deployment archive, use:"
+    printf "  - \e[36mhttps://TUI-transfer.kcstudio.nl\e[0m\n"
+    printf "\nSimply upload your .zip or .tar.gz file there, and paste the generated URL below.\n"
 
 
-    select_component "Which component do you want to deploy to?" SELECTED_COMPONENTS
+    if ! select_component "Which component do you want to deploy to?" SELECTED_COMPONENTS ; then return; fi
     local comp="$REPLY"
 
-    read -rp "Enter the URL of the archive file (e.g., .zip, .tar.gz): " url
+    prompt "Enter the URL of the archive file (e.g., .zip, .tar.gz): " url
     if [ -z "$url" ]; then log_warn "No URL provided."; return; fi
 
     local temp_dir
     temp_dir=$(mktemp -d)
-    trap 'sudo rm -rf "$temp_dir"' EXIT RETURN
+    trap '[[ -n "${temp_dir:-}" ]] && sudo rm -rf "$temp_dir"' EXIT RETURN
 
     log "Step 1: Downloading archive..."
     if ! sudo wget -O "$temp_dir/archive" "$url"; then
@@ -439,14 +669,14 @@ deploy_code_url() {
     log "Step 4: Confirm Deployment"
     echo "The contents of the archive will be copied to '$dest_path'."
     log_warn "This will overwrite any existing files with the same names."
-    read -rp "Are you sure you want to proceed with deployment to '$comp'? (y/N): " confirm
+    prompt "Are you sure you want to proceed with deployment to '$comp'? (y/N): " confirm
     if [[ "$confirm" != [yY] ]]; then echo "Deployment cancelled."; return; fi
 
     log "Step 5: Deploying..."
 
     if [[ "$comp" == "website" ]]; then
         log_warn "This is a full sync. Files in the website folder that are NOT in the archive will be deleted."
-        read -rp "Are you absolutely sure you want to continue? This will delete unmatched files. [y/N]: " confirm_website
+        prompt "Are you absolutely sure you want to continue? This will delete unmatched files. [y/N]: " confirm_website
         if [[ "$confirm_website" != [yY] ]]; then
             echo "Website deployment cancelled."
             return
@@ -475,39 +705,28 @@ deploy_code_url() {
     fi
 }
 
-
+# --- Direct Env Manager ---
 manage_env() {
     if [ ${#BACKEND_SERVICES[@]} -eq 0 ]; then log_err "No backend services found."; return; fi
 
     log "Manage Environment Variables (.env)"
-    select_component "Which service's .env file do you want to manage?" BACKEND_SERVICES
-    local comp="$REPLY"
-    local env_file="$APP_PATH/$comp/.env"
-
-    echo "Selected .env file for '$comp' service."
-    echo "1) View file"
-    echo "2) Edit file (uses your default editor, e.g., nano)"
-    read -rp "Your choice: " choice
-
-    case $choice in
-        1)
-            log "Contents of $env_file:"
-            sudo cat "$env_file"
-            ;;
-        2)
-            log "Opening $env_file in your default editor..."
-            echo "Save and exit the editor when you are done."
+    echo "Select service to edit .env:"
+    select comp in "${BACKEND_SERVICES[@]}"; do
+        if [[ -n "$comp" ]]; then
+            local env_file="$APP_PATH/$comp/.env"
+            log "Opening $env_file in nano..."
             sudo -E "${EDITOR:-nano}" "$env_file"
-            read -rp "You have edited the .env file. Restart service '$comp' to apply changes? (y/N): " restart_confirm
+            
+            prompt "Restart service '$comp' to apply changes? (y/N): " restart_confirm
             if [[ "$restart_confirm" == [yY] ]]; then
                 sudo systemctl restart "$PROJECT-$comp.service"
                 log_ok "Service '$comp' restarted."
             fi
-            ;;
-        *)
-            log_warn "Invalid option."
-            ;;
-    esac
+            break
+        else
+            warn "Invalid choice."
+        fi
+    done
 }
 
 explore_database() {
@@ -523,7 +742,7 @@ explore_database() {
     fi
 
     local selected_db
-    selected_db=$(echo "$db_files" | fzf --prompt="Select a database to explore > " --height=40% --border)
+    if ! selected_db=$(echo "$db_files" | fzf --prompt="Select a database to explore > " --height=40% --border); then return; fi
 
     if [ -z "$selected_db" ]; then echo "No database selected."; return; fi
 
@@ -557,52 +776,81 @@ view_tree() {
 }
 
 edit_component_file_fzf() {
-  if ! check_dep "fzf"; then return; fi
-  if [ ${#BACKEND_SERVICES[@]} -eq 0 ]; then
-    log_err "No backend services found."
-    return
-  fi
+    if ! check_dep "fzf"; then return; fi
 
-  log "Scanning all component files..."
-  local file_list=()
-  local -A file_to_comp_map
+    log "Scanning all component files..."
+    local file_list=()
+    local -A file_to_comp_map
 
-  for comp in "${BACKEND_SERVICES[@]}"; do
-    local comp_path="$APP_PATH/$comp"
-    while IFS= read -r file; do
-      local rel_path="${file#$comp_path/}"
-      local display="[${comp}] $rel_path"
-      file_list+=("$display")
-      file_to_comp_map["$display"]="$comp:$file"
-    done < <(sudo find "$comp_path" -type f ! -path "*/venv/*")
-  done
+    # --- Backend services (if present) ---
+    for comp in "${BACKEND_SERVICES[@]}"; do
+        local comp_path="$APP_PATH/$comp"
+        [ -d "$comp_path" ] || continue
 
-  if [ ${#file_list[@]} -eq 0 ]; then
-    log_warn "No editable files found in backend components."
-    return
-  fi
+        while IFS= read -r file; do
+            local rel_path="${file#$comp_path/}"
+            local display="[${comp}] $rel_path"
+            file_list+=("$display")
+            file_to_comp_map["$display"]="$comp:$file"
+        done < <(
+            sudo find "$comp_path" -type f \
+                ! -path "*/venv/*" \
+                ! -path "*/__pycache__/*"
+        )
+    done
 
-  local selection
-  selection=$(printf '%s\n' "${file_list[@]}" | fzf --prompt="Select a file to edit > " --height=80% --border)
-  if [[ -z "$selection" ]]; then
-    log_warn "No file selected."
-    return
-  fi
+    # --- Website (if present) ---
+    if [[ "$HAS_WEBSITE" == "true" && -d "$APP_PATH/website" ]]; then
+        local site_path="$APP_PATH/website"
+        while IFS= read -r file; do
+            local rel_path="${file#$site_path/}"
+            local display="[website] $rel_path"
+            file_list+=("$display")
+            file_to_comp_map["$display"]="website:$file"
+        done < <(sudo find "$site_path" -type f)
+    fi
 
-  IFS=':' read -r comp full_path <<< "${file_to_comp_map["$selection"]}"
+    if [ ${#file_list[@]} -eq 0 ]; then
+        log_warn "No editable files found."
+        return
+    fi
 
-  log "Editing '$full_path' from component '$comp'..."
-  sudo -E "${EDITOR:-nano}" "$full_path"
+    local selection
+    if ! selection=$(printf '%s\n' "${file_list[@]}" | fzf \
+        --prompt="Select a file to edit > " \
+        --height=80% \
+        --border); then
+        return
+    fi
 
-  echo ""
-  read -rp "Restart service '$comp' to apply changes? (y/N): " restart_confirm
-  if [[ "$restart_confirm" == [yY] ]]; then
-    sudo systemctl restart "$PROJECT-$comp.service"
-    log_ok "Service '$comp' restarted."
-  else
-    log "No restart performed."
-  fi
+    [ -n "$selection" ] || return
+
+    IFS=':' read -r comp full_path <<< "${file_to_comp_map["$selection"]}"
+
+    log "Editing '$full_path' from component '$comp'..."
+    sudo -E "${EDITOR:-nano}" "$full_path"
+
+    echo ""
+
+    # --- Post-edit action ---
+    if [[ "$comp" == "website" ]]; then
+        prompt "Reload NGINX to apply website changes? (y/N): " reload_confirm
+        if [[ "$reload_confirm" == [yY] ]]; then
+            reload_nginx
+        else
+            log "NGINX reload skipped."
+        fi
+    else
+        prompt "Restart service '$comp' to apply changes? (y/N): " restart_confirm
+        if [[ "$restart_confirm" == [yY] ]]; then
+            sudo systemctl restart "$PROJECT-$comp.service"
+            log_ok "Service '$comp' restarted."
+        else
+            log "No restart performed."
+        fi
+    fi
 }
+
 
 # --- Maintenance & Danger Zone Functions ---
 backup_menu() {
@@ -614,7 +862,7 @@ backup_menu() {
     echo "1) Backup FULL Project (Code + Data + Logs)"
     echo "2) Backup DATABASES Only"
     echo "3) Return to Main Menu"
-    read -rp "Your choice: " choice
+    prompt "Your choice: " choice
 
     local timestamp
     timestamp=$(date +"%Y%m%d_%H%M%S")
@@ -624,32 +872,80 @@ backup_menu() {
             local backup_file="$BACKUP_ROOT/${PROJECT}-full-backup-${timestamp}.tar.gz"
             log "Starting full project backup..."
             echo "This will archive the entire '$APP_PATH' directory, excluding 'venv' directories."
-            sudo tar --exclude='**/venv' -czf "$backup_file" -C "$(dirname "$APP_PATH")" "$(basename "$APP_PATH")"
-            log_ok "Full project backup complete!"
-            echo "Archive created at: $backup_file"
+            if sudo tar --exclude='**/venv' -czf "$backup_file" -C "$(dirname "$APP_PATH")" "$(basename "$APP_PATH")"; then
+                log_ok "Full project backup complete!"
+                echo "Archive created at: $backup_file"
+                prompt_and_upload_file "$backup_file"
+            else
+                log_err "Backup command failed. Please check permissions and disk space."
+            fi
             ;;
         2)
-            if ! check_dep "sqlite3"; then return; fi
-            local backup_file="$BACKUP_ROOT/${PROJECT}-db-backup-${timestamp}.tar.gz"
+            if ! check_dep "sqlite3" || ! check_dep "fzf"; then return; fi
+            log "Searching for databases within project '$PROJECT'..."
+            local db_files
+            db_files=($(sudo find "$APP_PATH" -type f \( -name "*.db" -o -name "*.sqlite" -o -name "*.sqlite3" \)))
+
+            if [ ${#db_files[@]} -eq 0 ]; then
+                log_warn "No database files found for this project."
+                return
+            fi
+
+            echo "Found the following databases:"
+            for db in "${db_files[@]}"; do
+                echo "  - $(basename "$db")"
+            done
+            
+            echo ""
+            echo "What would you like to back up?"
+            echo "  1) Backup ALL databases into a single archive"
+            echo "  2) Select a SPECIFIC database to back up"
+            prompt "Your choice: " db_backup_choice
+
             local temp_db_dir
             temp_db_dir=$(mktemp -d)
             trap 'sudo rm -rf "$temp_db_dir"' RETURN
 
-            log "Starting database-only backup..."
-            echo "Searching for .db files and creating safe copies..."
-            find "$APP_PATH" -type f -name "*.db" -print0 | while IFS= read -r -d $'\0' db_file; do
-                local rel_path
-                rel_path=$(realpath --relative-to="$APP_PATH" "$db_file")
-                sudo mkdir -p "$temp_db_dir/$(dirname "$rel_path")"
-                sudo sqlite3 "$db_file" ".backup '$temp_db_dir/$rel_path'"
-                log_ok "Backed up: $rel_path"
-            done
-            sudo tar -czf "$backup_file" -C "$temp_db_dir" .
-            log_ok "Database backup complete!"
-            echo "Archive created at: $backup_file"
+            if [[ "$db_backup_choice" == "1" ]]; then
+                log "Backing up all databases..."
+                for db_file in "${db_files[@]}"; do
+                    local rel_path
+                    rel_path=$(realpath --relative-to="$APP_PATH" "$db_file")
+                    sudo mkdir -p "$temp_db_dir/$(dirname "$rel_path")"
+                    sudo sqlite3 "$db_file" ".backup '$temp_db_dir/$rel_path'"
+                    log_ok "Backed up: $rel_path"
+                done
+                
+                local backup_file="$BACKUP_ROOT/${PROJECT}-db-all-backup-${timestamp}.tar.gz"
+                sudo tar -czf "$backup_file" -C "$temp_db_dir" .
+                echo ""
+                log_ok "All databases backed up into a single archive!"
+                echo ""
+                echo "Archive created at: $backup_file"
+                prompt_and_upload_file "$backup_file"
+
+            elif [[ "$db_backup_choice" == "2" ]]; then
+                local selected_db
+                if ! selected_db=$(printf '%s\n' "${db_files[@]}" | fzf --prompt="Select a database to back up > " --height=40% --border); then return; fi
+
+                if [ -n "$selected_db" ]; then
+                    local backup_file="$BACKUP_ROOT/${PROJECT}-db-$(basename "$selected_db")-${timestamp}.db.bak"
+                    log "Creating a safe backup copy of $(basename "$selected_db")..."
+                    sudo sqlite3 "$selected_db" ".backup '$backup_file'"
+                    echo ""
+                    log_ok "Database backup complete!"
+                    echo ""
+                    echo "Backup file created at: $backup_file"
+                    prompt_and_upload_file "$backup_file"
+                else
+                    log_warn "No database selected. Operation cancelled."
+                fi
+            else
+                warn "Invalid choice."
+            fi
             ;;
         3) return ;;
-        *) log_warn "Invalid choice." ;;
+        *) warn "Invalid choice." ;;
     esac
 }
 
@@ -658,7 +954,7 @@ delete_project() {
     echo "This includes all code, databases, logs, users, system services, and NGINX configurations."
     log_warn "This action CANNOT BE UNDONE. It is recommended to create a backup first."
 
-    read -rp "To confirm, please type the project name ('$PROJECT'): " confirm_name
+    prompt "To confirm, please type the project name ('$PROJECT'): " confirm_name
 
     if [[ "$confirm_name" != "$PROJECT" ]]; then
         err "Confirmation failed. Project deletion aborted."
@@ -702,71 +998,105 @@ delete_project() {
 }
 
 show_help() {
-    show_logo
-    log "Project Operator Help"
-    printf "\nThis script is your command center for a single, specific project ('%s').\n" "$PROJECT"
+    (
+        show_logo
+        echo -e "${WHITE}PROJECT MANAGER: ${GREEN}$PROJECT${RESET}"
+        echo -e "This dashboard handles the lifecycle of a single application."
+        echo -e "Below is a guide on the recommended workflow."
+        echo ""
 
-    printf "\n\e[36m%s\e[0m\n" "1. Main Operations"
-    printf "   %s\n" "These are your day-to-day tools for checking on and managing the project."
-    printf "   - \e[33m%s\e[0m: %s\n" "Show Info" "Get a quick summary of domains, paths, and components."
-    printf "   - \e[33m%s\e[0m: %s\n" "Restart Service" "Use this after manual code changes to make them take effect."
-    printf "   - \e[33m%s\e[0m: %s\n" "View Live Logs" "The most important debugging tool to see real-time app output."
-    printf "   - \e[33m%s\e[0m: %s\n" "Check all backend apps health" "Verifies that all services are running and accessible from the internet."
-    printf "   - \e[33m%s\e[0m: %s\n" "Reload Website" "Resets website file permissions and reloads NGINX."
-    printf "   - \e[33m%s\e[0m: %s\n" "Reload NGINX" "Tests and reloads the global NGINX configuration."
+        echo -e "${WHITE}--- 1. THE DEPLOYMENT CYCLE ---${RESET}"
+        echo -e "  ${BLUE}[D] Deploy (Local):${RESET}"
+        echo -e "      ${GREEN}Use Case:${RESET} You uploaded code to the server via FTP/SCP."
+        echo -e "      ${GREEN}Action:${RESET} Syncs files to the app folder (ignoring venv/db) and restarts the service."
+        echo -e "  ${BLUE}[U] Deploy (URL):${RESET}"
+        echo -e "      ${GREEN}Use Case:${RESET} You want to deploy a GitHub Release .zip."
+        echo -e "      ${GREEN}Action:${RESET} Downloads, unzips, and deploys the code in one step."
+        echo -e "  ${BLUE}[R] Restart Service:${RESET}"
+        echo -e "      ${GREEN}Use Case:${RESET} You edited a Python file manually via CLI."
+        echo -e "      ${GREEN}Action:${RESET} Restarts the Systemd service to load the new code."
 
-    printf "\n\e[36m%s\e[0m\n" "2. Developer Tools"
-    printf "   %s\n" "Tools to help you with the development and deployment cycle."
-    printf "   - \e[33m%s\e[0m: %s\n" "Show Admin Keys" "Displays the secret admin keys for your backend services."
-    printf "   - \e[33m%s\e[0m: %s\n" "Rotate JWT Secret" "Generates a new master key for signing tokens. Logs out all users."
-    printf "   - \e[33m%s\e[0m: %s\n" "Deploy from Local" "Safely copies code from a folder on the server to an app and restarts it."
-    printf "   - \e[33m%s\e[0m: %s\n" "Deploy from URL" "Downloads a .zip or .tar.gz from a URL and deploys it to a component."
-    printf "   - \e[33m%s\e[0m: %s\n" "Manage .env" "Securely view or edit secrets like API keys."
-    printf "   - \e[33m%s\e[0m: %s\n" "Explore Databases" "Finds this project's databases and lets you explore them with a friendly CLI."
-    printf "   - \e[33m%s\e[0m: %s\n" "Open Service Shell" "Log in as the application's user, with its virtual environment activated."
+        echo ""
+        echo -e "${WHITE}--- 2. DEBUGGING & LOGS ---${RESET}"
+        echo -e "  ${BLUE}[L] Live Service Logs:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} The #1 tool for fixing 500 Errors. Shows the 'print()' output of your app in real-time."
+        echo -e "  ${BLUE}[N] NGINX Logs:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} Shows traffic."
+        echo -e "      - ${YELLOW}Access Log:${RESET} Who is visiting? (200 OK)"
+        echo -e "      - ${YELLOW}Error Log:${RESET} Why did Nginx reject a request? (502 Bad Gateway, 413 Payload Too Large)."
+        echo -e "  ${BLUE}[2] Health Check:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} Pings your app internally (127.0.0.1) and externally (public domain) to confirm connectivity."
 
-    printf "\n\e[36m%s\e[0m\n" "3. Maintenance & Danger Zone"
-    printf "   %s\n" "Powerful tools that should be used with care."
-    printf "   - \e[33m%s\e[0m: %s\n" "Backup" "Create a full-project or database-only backup archive."
-    printf "   - \e[33m%s\e[0m: %s\n" "DELETE Project" "Completely and irreversibly removes the project from the server."
+        echo ""
+        echo -e "${WHITE}--- 3. CONFIGURATION & SECRETS ---${RESET}"
+        echo -e "  ${BLUE}[E] Edit .env:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} Securely change API Keys, Database passwords, or Debug settings."
+        echo -e "      ${GREEN}Note:${RESET} Automatically asks to restart the app after saving."
+        echo -e "  ${BLUE}[C] Edit NGINX:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} Change domain names, upload limits, or routing rules."
+        echo -e "      ${GREEN}Safety:${RESET} It runs 'nginx -t' before reloading to prevent crashing the web server with a typo."
+
+        echo ""
+        echo -e "${WHITE}--- 4. ADVANCED DEVELOPER TOOLS ---${RESET}"
+        echo -e "  ${BLUE}[Z] Service Shell:${RESET}"
+        echo -e "      ${GREEN}Power Feature:${RESET} drops you into a terminal acting AS the app user."
+        echo -e "      ${GREEN}Bonus:${RESET} It automatically activates the Python Virtual Environment (venv)."
+        echo -e "      ${GREEN}Use for:${RESET} Running 'pip install', 'flask db upgrade', or management scripts."
+        echo -e "  ${BLUE}[DB] Explore Databases:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} Opens a SQL client (LiteCLI) connected to your project's SQLite files."
+        echo -e "  ${BLUE}[F] Edit Any File:${RESET}"
+        echo -e "      ${GREEN}Why:${RESET} Uses a fuzzy-finder (fzf) to quickly locate and edit any file in the project folder."
+
+        echo ""
+        echo -e "${WHITE}--- 5. MAINTENANCE ---${RESET}"
+        echo -e "  ${BLUE}[A] Archive/Backup:${RESET} Snapshot your code and database before making risky changes."
+        echo -e "  ${BLUE}[J] Rotate JWT:${RESET} ${RED}Danger Zone.${RESET} Generates a new signing key. Forces ALL users to log in again."
+        echo ""
+        echo -e "${YELLOW}(Press 'q' to quit help)${RESET}"
+    ) | less -R
 }
 
 
 show_menu() {
   clear
   show_logo
-  echo "==================================================================================="
-  echo "  Project Operator: $PROJECT"
-  echo "==================================================================================="
+  echo -e "${WHITE}===================================================================================${RESET}"
+  echo -e "  Manage Project: ${GREEN}$PROJECT${RESET}"
+  echo -e "${WHITE}===================================================================================${RESET}"
   echo ""
-  echo "--- Main ---"
-  echo "  1) Show Project Info"
-  echo "  2) Restart a Backend Service"
-  echo "  3) View Live Logs"
-  echo "  4) Check all backend apps health"
-  echo "  5) Show Detailed Service Status"
-  echo "  6) Reload Website Files & Permissions"
-  echo "  N) Reload NGINX Configuration"
+  echo -e "  ${WHITE}--- INSIGHTS ---${RESET}"
+  echo -e "  ${BLUE}[1]${RESET} Show Project Info"
+  echo -e "  ${BLUE}[2]${RESET} Health Check (Endpoints)"
+  echo -e "  ${BLUE}[3]${RESET} Service Status (Systemd)"
+  echo -e "  ${BLUE}[4]${RESET} View Directory Tree"
   echo ""
-  echo "--- Developer Tools ---"
-  echo "  A) Show Admin API Keys"
-  echo "  J) Rotate JWT Secret..."
-  echo "  P) Deploy from Local Path..."
-  echo "  U) Deploy from URL..."
-  echo "  E) Manage .env Variables..."
-  echo "  D) Explore Project Databases (litecli)..."
-  echo "  S) Open Service Shell"
-  echo "  T) View Project Directory Tree"
-  echo "  F) Edit Any File in a Backend Component (fzf)"
+  echo -e "  ${WHITE}--- LOGS & TRAFFIC ---${RESET}"
+  echo -e "  ${BLUE}[L]${RESET} View Live Service Logs"
+  echo -e "  ${BLUE}[N]${RESET} NGINX Logs (Frontend/Backend)"
   echo ""
-  echo "--- Maintenance & Danger Zone ---"
-  echo "  B) Backup Menu..."
-  echo "  X) DELETE this Project..."
+  echo -e "  ${WHITE}--- OPERATIONS ---${RESET}"
+  echo -e "  ${BLUE}[R]${RESET} Restart Services"
+  echo -e "  ${BLUE}[W]${RESET} Reload Website (Perms)"
+  echo -e "  ${BLUE}[C]${RESET} Edit & Reload NGINX Config"
   echo ""
-  echo "==================================================================================="
-  echo "  H) Help             Q) Quit"
-  echo "==================================================================================="
-  read -rp "Enter choice: " choice
+  echo -e "  ${WHITE}--- DEVELOPER ---${RESET}"
+  echo -e "  ${BLUE}[D]${RESET} Deploy Code (Local Path)"
+  echo -e "  ${BLUE}[U]${RESET} Deploy Code (URL)"
+  echo -e "  ${BLUE}[E]${RESET} Edit .env Variables"
+  echo -e "  ${BLUE}[Z]${RESET} Open Service Shell"
+  echo -e "  ${BLUE}[F]${RESET} Edit Any File (fzf)"
+  echo -e "  ${BLUE}[DB]${RESET}Explore Databases"
+  echo ""
+  echo -e "  ${WHITE}--- MAINTENANCE ---${RESET}"
+  echo -e "  ${BLUE}[A]${RESET} Archive/Backup Project"
+  echo -e "  ${BLUE}[K]${RESET} Show Admin API Keys"
+  echo -e "  ${BLUE}[J]${RESET} Rotate JWT Secret"
+  echo -e "  ${RED}[X]${RESET} DELETE Project"
+  echo ""
+  echo -e "${WHITE}===================================================================================${RESET}"
+  echo -e "  ${BLUE}[B]${RESET} Back to Hub              ${BLUE}[H]${RESET} Help"
+  echo -e "${WHITE}===================================================================================${RESET}"
+  prompt "Your choice: " choice
 }
 
 # --- Main Menu Loop ---
@@ -774,42 +1104,45 @@ while true; do
   show_menu
   case $choice in
     1) show_info; pause ;;
-    2) restart_component; pause ;;
-    3) view_logs; pause ;;
-    4) check_health; pause ;;
-    5) status_all; pause ;;
-    6) reload_website; pause ;;
-    [Nn]) reload_nginx; pause ;;
+    2) check_health; pause ;;
+    3) status_all; pause ;;
+    4) view_tree; pause ;;
+    
+    [Ll]) view_logs; pause ;;
+    [Nn]) tail_nginx_logs; pause ;;
+    
+    [Rr]) restart_component; pause ;;
+    [Ww]) reload_website; pause ;;
+    [Cc]) edit_and_reload_nginx; pause ;;
 
-    [Aa]) show_admin_keys; pause ;;
-    [Jj]) rotate_jwt_secret; pause ;;
-    [Pp]) deploy_code_local; pause ;;
+    [Dd]) deploy_code_local; pause ;;
     [Uu]) deploy_code_url; pause ;;
     [Ee]) manage_env; pause ;;
-    [Dd]) explore_database; pause ;;
-    [Ss])
+    [Kk]) show_admin_keys; pause ;;
+    [Jj]) rotate_jwt_secret; pause ;;
+    DB|db) explore_database; pause ;;
+    [Zz])
         if [ ${#BACKEND_SERVICES[@]} -eq 0 ]; then log_err "No backend services found."; pause; continue; fi
-        select_component "Which service's shell do you want to open?" BACKEND_SERVICES
+        if ! select_component "Which service's shell do you want to open?" BACKEND_SERVICES ; then return; fi
         comp="$REPLY"
         comp_path="$APP_PATH/$comp"
 
         log "Opening shell for '$comp'. Type 'exit' to return."
         echo "You are now operating as the '$APP_USER' user, in the correct directory, with the Python venv activated."
-        log_warn "The user's HOME is temporarily set to '$comp_path' for this session."
+        warn "The user's HOME is temporarily set to '$comp_path' for this session."
         
-        # CRITICAL FIX: Set the HOME environment variable for the sudo session.
+        # Set the HOME environment variable for the sudo session.
         # This gives programs like nano and pip a writable directory for their cache/config files.
         # Use --init-file to ensure the (venv) prompt is displayed correctly.
         sudo -u "$APP_USER" HOME="$comp_path" bash -c "cd '$comp_path' && bash --init-file venv/bin/activate -i"
         ;;
-    [Tt]) view_tree; pause ;;
     [Ff]) edit_component_file_fzf; pause ;;
 
-    [Bb]) backup_menu; pause ;;
+    [Aa]) backup_menu; pause ;;
     [Xx]) delete_project ;;
 
-    [Hh]) show_help; pause ;;
-    [Qq]) echo "Exiting." && exit 0 ;;
-    *) log_err "Invalid choice. Please try again."; pause ;;
+    [Hh]) show_help ;;
+    [Bb]) exit 0 ;;
+    *) warn "Invalid choice."; pause ;;
   esac
 done

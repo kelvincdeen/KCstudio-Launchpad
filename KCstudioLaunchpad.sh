@@ -1,20 +1,47 @@
 #!/bin/bash
 #
-# === KCStudio Launchpad V1.0 ===
+# === KCStudio Launchpad v2.0 ===
+#
+# The Central Command Hub for the KCstudio Launchpad Bash Platform.
+#
+# Copyright (c) 2026 Kelvin Deen - KCStudio.nl
 #
 
 set -euo pipefail
 IFS=$'\n\t'
+
+# --- Constants ---
+SECURE_STATE_FILE="/etc/kcstudio/secure_core.state"
+
+# --- Colors (Standardized) ---
+RED='\033[31m'
+GREEN='\033[32m'
+YELLOW='\033[1;33m'
+BLUE='\033[36m'
+ORANGE='\033[0;33m'
+DARKGRAY='\033[0;33m'
+WHITE='\033[1;37m'
+RESET='\033[0m'
+
+# --- Helper Functions ---
+log() { echo -e "\n${GREEN}[+]${RESET} $1"; }
+log_ok() { echo -e "  ${GREEN}✔${RESET} $1"; }
+log_warn() { echo -e "  ${YELLOW}!${RESET} $1"; }
+log_err() { echo -e "\n${RED}[!]${RESET} $1"; } # No exit
+warn() { echo -e "\n${YELLOW}[!]${RESET} $1"; }
+err() { echo -e "\n${RED}[X]${RESET} $1" >&2; exit 1; }
+prompt() { read -rp "$(echo -e "${BLUE}[?]${RESET} $1 ")" "$2"; }
+pause() { echo ""; read -rp "Press [Enter] to continue..."; }
 
 # --- Root Enforcement ---
 if [ "$EUID" -ne 0 ]; then
     echo ""
     echo ""
     echo ""
-    echo -e "\n\e[31m[X]\e[0m This script must be run as \e[1mroot\e[0m to \e[1muse & enjoy\e[0m all its \e[1mfeatures\e[0m flawlessly."
+    log_err "This script must be run as root to use & enjoy all its features flawlessly."
     echo -e "Please \e[1mrun\e[0m it \e[1magain\e[0m with:"
     echo ""
-    echo -e "  \e[36msudo ./$(basename "$0")\e[0m"
+    echo -e "  \e[36msudo launchpad (or kcstudio-launchpad)\e[0m"
     echo ""
     echo ""
     echo ""
@@ -25,13 +52,6 @@ fi
 # --- Startup animation ---
 launch_kcstudio() {
     clear
-
-    # --- ANSI Colors ---
-    YELLOW=$'\033[1;33m'
-    ORANGE=$'\033[0;33m'
-    DARKGRAY=$'\033[0;33m'
-    WHITE=$'\033[1;37m'
-    RESET=$'\033[0m'
 
     # --- Add vertical padding ---
     blank_lines=60
@@ -78,29 +98,23 @@ launch_kcstudio() {
 
     # --- KCSTUDIO.NL Logo ASCII ---
     logo_lines=(
-    "${WHITE}██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗    ███╗   ██╗██╗${RESET}"
-    "${WHITE}██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗   ████╗  ██║██║${RESET}"
-    "${WHITE}█████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║   ██╔██╗ ██║██║${RESET}"
-    "${WHITE}██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║   ██║╚██╗██║██║${RESET}"
-    "${WHITE}██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝██╗██║ ╚████║███████╗${RESET}"
-    "${WHITE}╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝${RESET}"
+    "${WHITE}        ██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗  ${RESET}"
+    "${WHITE}        ██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗ ${RESET}"
+    "${WHITE}        █████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║║${RESET}"
+    "${WHITE}        ██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║ ${RESET}"
+    "${WHITE}        ██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝ ${RESET}"
+    "${WHITE}        ╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝  ${RESET}"
     ""
     )
 
     extra_lines_b=(
-    "${WHITE}   ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗${RESET}"
-    "${WHITE}   ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗${RESET}"
-    "${WHITE}   ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║${RESET}"
-    "${WHITE}   ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║${RESET}"
-    "${WHITE}   ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝${RESET}"
-    "${WHITE}   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝${RESET}"
+    "${WHITE}  ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗${RESET}"
+    "${WHITE}  ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗${RESET}"
+    "${WHITE}  ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║${RESET}"
+    "${WHITE}  ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║${RESET}"
+    "${WHITE}  ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝${RESET}"
+    "${WHITE}  ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝${RESET}"
     )
-
-
-
-
-
-
 
     # --- Rocket Launch Reveal ---
     for line in "${rocket_lines[@]}"; do
@@ -122,46 +136,82 @@ launch_kcstudio() {
     done
 }
 
-# --- Helper Functions ---
-log() { echo -e "\n\e[32m[+]\e[0m $1"; }
-warn() { echo -e "\n\e[33m[!]\e[0m $1"; }
-err() { echo -e "\n\e[31m[!] \e[31m$1\e[0m" >&2; exit 1; }
-prompt() { read -rp "$(echo -e "\e[36m[?]\e[0m $1 ")" "$2"; }
-pause() { echo ""; read -rp "Press [Enter] to continue..."; }
-
 # --- Menu Display & Core Logic ---
 show_logo() {
     clear
     echo -e '\033[1;37m'
     cat << 'EOF'
-██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗    ███╗   ██╗██╗
-██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗   ████╗  ██║██║
-█████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║   ██╔██╗ ██║██║
-██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║   ██║╚██╗██║██║
-██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝██╗██║ ╚████║███████╗
-╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ ╚═╝╚═╝  ╚═══╝╚══════╝
+
+         ██╗  ██╗ ██████╗███████╗████████╗██╗   ██╗██████╗ ██╗ ██████╗   
+         ██║ ██╔╝██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗██║██╔═══██╗ 
+         █████╔╝ ██║     ███████╗   ██║   ██║   ██║██║  ██║██║██║   ██║  
+         ██╔═██╗ ██║     ╚════██║   ██║   ██║   ██║██║  ██║██║██║   ██║ 
+         ██║  ██╗╚██████╗███████║   ██║   ╚██████╔╝██████╔╝██║╚██████╔╝
+         ╚═╝  ╚═╝ ╚═════╝╚══════╝   ╚═╝    ╚═════╝ ╚═════╝ ╚═╝ ╚═════╝ 
+
+   ██╗      █████╗ ██╗   ██╗███╗   ██╗ ██████╗██╗  ██╗██████╗  █████╗ ██████╗
+   ██║     ██╔══██╗██║   ██║████╗  ██║██╔════╝██║  ██║██╔══██╗██╔══██╗██╔══██╗
+   ██║     ███████║██║   ██║██╔██╗ ██║██║     ███████║██████╔╝███████║██║  ██║
+   ██║     ██╔══██║██║   ██║██║╚██╗██║██║     ██╔══██║██╔═══╝ ██╔══██║██║  ██║
+   ███████╗██║  ██║╚██████╔╝██║ ╚████║╚██████╗██║  ██║██║     ██║  ██║██████╔╝
+   ╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚═╝  ╚═╝╚═╝     ╚═╝  ╚═╝╚═════╝
+
 EOF
-    echo -e "\e[0m"
+    echo -e "${RESET}"
 }
 
 run_script() {
-    local script_name=$1
-    # Bepaal de directory waar het HUIDIGE script (KCstudioLaunchpadV1.0.sh) staat.
+    local script_pattern="$1"
     local toolkit_dir
+    # Get the directory where this script is running
     toolkit_dir=$(dirname "$(realpath "$0")")
-    
-    local script_path="${toolkit_dir}/${script_name}"
+    local script_path=""
 
+    # ----------------------------------------------------------------
+    # 1. PRIORITY: Exact Match (Fastest & Safest)
+    # ----------------------------------------------------------------
+    if [ -f "$toolkit_dir/${script_pattern}.sh" ]; then
+        script_path="$toolkit_dir/${script_pattern}.sh"
+
+    # ----------------------------------------------------------------
+    # 2. FALLBACK: Robust Fuzzy Search with Version Sorting
+    #    This handles: NameV10.sh, Namev2.5 - fix.sh, NameV12.432.3.sh
+    # ----------------------------------------------------------------
+    else
+        local matches
+        # Use mapfile to capture the output of the complex pipeline
+        mapfile -t matches < <(
+            find "$toolkit_dir" -maxdepth 1 -type f -iname "${script_pattern}*.sh" \
+            | grep -Ei '[Vv][0-9]+(\.[0-9]+)*' \
+            | sed -E 's|.*[Vv]([0-9]+(\.[0-9]+)*)|\1\t&|' \
+            | sort -V \
+            | tail -n 1 \
+            | cut -f2-
+        )
+
+        # If grep/sort found something, matches[0] is the winner
+        if [ ${#matches[@]} -gt 0 ] && [ -n "${matches[0]}" ]; then
+            script_path="${matches[0]}"
+        else
+            err "No script matching '$script_pattern' found in $toolkit_dir"
+            return 1
+        fi
+    fi
+
+    # ----------------------------------------------------------------
+    # 3. Execution & Permission Fixes
+    # ----------------------------------------------------------------
     if [ ! -f "$script_path" ]; then
-        err "Script '$script_name' not found at expected path: '$script_path'. Please ensure all toolkit scripts are in the same directory."
-    fi
-    
-    if [ ! -x "$script_path" ]; then
-        warn "Script '$script_name' is not executable. Attempting to set permissions..."
-        sudo chmod +x "$script_path" || err "Could not set execute permissions on '$script_path'. Please run 'sudo chmod +x $script_path' manually."
+        err "Resolved script path does not exist: $script_path"
+        return 1
     fi
 
-    log "Executing '$script_name'..."
+    if [ ! -x "$script_path" ]; then
+        warn "Script '$(basename "$script_path")' is not executable. Attempting to fix permissions..."
+        chmod +x "$script_path" || err "Could not set execute permissions on '$script_path'"
+    fi
+
+    log "Executing $(basename "$script_path")..."
     "$script_path"
 }
 
@@ -173,10 +223,9 @@ verify_os() {
     fi
 
     # Source the os-release file to get variables like ID and VERSION_ID
-    # This is safe as it's a standard system file.
     . /etc/os-release
 
-    if [ "$ID" != "ubuntu" ] && [ "$VERSION_ID" != "24.04" ]; then
+    if [ "$ID" != "ubuntu" ] || [ "$VERSION_ID" != "24.04" ]; then
         # log "System check passed: Ubuntu 24.04 LTS detected."
     # else
         # If it fails, print a detailed error message before exiting.
@@ -195,26 +244,26 @@ verify_os() {
 show_docs_main() {
     while true; do
         show_logo
+        printf "  \e[1;37m%s\e[0m\n" "Documentation & User Guides"
         echo "==================================================================================="
-        echo "           Toolkit Documentation & User Guides"
-        echo "==================================================================================="
-        echo
-        echo "--- The Workflow ---"
+        echo ""
+        printf "  \e[1;37m%-15s\e[0m\n" "The Workflow"
         echo "  [1] Step 1: Secure Core VPS Setup (The Foundation)"
         echo "  [2] Step 2: Create Project (The Architect)"
         echo "  [3] Step 3: Manage App (The Project Manager)"
         echo "  [4] Step 4: Server Maintenance (The Operator)"
-        echo
-        echo "--- Guides & Reference ---"
+        echo ""
+        printf "  \e[1;37m%-15s\e[0m\n" "Guides & Reference"
         echo "  [5] The 'Big Picture': How It All Works Together"
         echo "  [6] How to Use the Generated API"
         echo "  [7] Full API Reference"
         echo "  [8] Manual Commands & Emergency Cheatsheet"
         echo "  [9] About & The Toolkit Philosophy"
-        echo
-        echo "  [M] Return to Main Menu"
+        echo ""
         echo "==================================================================================="
-        prompt "Select a topic to learn about: " choice
+        printf "  \e[36m[B]\e[0m Back to Main Menu\n"
+        echo "==================================================================================="
+        prompt "Your choice: " choice
 
         case $choice in
             1) docs_secure_vps ;;
@@ -226,150 +275,195 @@ show_docs_main() {
             7) docs_api_reference ;;
             8) docs_manual_commands ;;
             9) docs_philosophy ;;
-            [Mm]) return 0 ;;
+            [Bb]) return 0 ;;
             *) warn "Invalid choice."; pause ;;
         esac
     done
 }
 
 docs_secure_vps() {
-    show_logo
-    log "Documentation: Secure Core VPS Setup (v5.1)"
-    printf "\e[36m%s\e[0m\n" "--- I. PURPOSE ---"
-    printf " %s\n" "This is the **first script you should ever run** on a fresh, new server."
-    printf " %s\n" "Its sole purpose is to transform a generic, vulnerable server into a hardened,"
-    printf " %s\n" "production-ready foundation. It is designed to be run **only once**."
+        show_logo
+        log "Documentation: Secure Core VPS Setup"
+        
+        echo -e "${WHITE}I. PURPOSE${RESET}"
+        echo -e "This script transforms a generic, vulnerable server into a hardened fortress."
+        echo -e "It is idempotent, meaning you can run it multiple times safely."
+        echo ""
 
-    printf "\n\e[36m%s\e[0m\n" "--- II. KEY ACTIONS & FEATURES ---"
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Installs Core Packages" "Upgrades the OS and installs essentials like NGINX, UFW, Fail2Ban, Certbot, and LiteCLI."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Checks Time Sync (NTP)" "Verifies the server's clock is synchronized, preventing SSL and JWT token errors."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Pre-registers Certbot" "Prompts you for your email to pre-register with Let's Encrypt, ensuring"
-    printf "    %s\n" "smoother project creation later."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Creates a Secure Deploy User" "Creates a non-root user with passwordless \`sudo\` for all future work."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Hardens SSH Access" "Disables password login, forces SSH key use, moves SSH to a custom port,"
-    printf "    %s\n" "and enforces modern, secure encryption ciphers."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Sets up UFW Firewall" "Configures the firewall to deny all incoming traffic by default, only allowing"
-    printf "    %s\n" "your custom SSH port and web traffic (HTTP/S)."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Configures Fail2Ban" "Sets up automated intrusion prevention to block IPs that try to brute-force SSH."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Hardens NGINX" "Creates secure global settings and a 'black hole' default site to prevent info leaks."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Enables Auto-Updates" "Configures \`unattended-upgrades\` to automatically install critical security patches."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Runs Security Audit" "Finishes by running \`lynis\` to give you a report card on the server's new hardened state."
-    pause
+        echo -e "${WHITE}II. KEY FEATURES (FIRST RUN)${RESET}"
+        echo -e "  ${GREEN}1. Installation:${RESET} Upgrades OS, installs NGINX, UFW, Fail2Ban, Certbot, LiteCLI."
+        echo -e "  ${GREEN}2. User Setup:${RESET} Creates a 'deploy' user with sudo access and SSH keys."
+        echo -e "  ${GREEN}3. SSH Hardening:${RESET} Disables root login, disables passwords, changes port (default 2222)."
+        echo -e "  ${GREEN}4. Firewall:${RESET} UFW enables only SSH and HTTP/HTTPS ports."
+        echo -e "  ${GREEN}5. Security:${RESET} Enables Unattended Upgrades and configures Fail2Ban jails."
+        echo -e "  ${GREEN}6. Privacy:${RESET} Configures NGINX 'Black Hole' to drop traffic to unknown domains (Error 444)."
+        echo -e "  ${GREEN}7. Audit:${RESET} Runs a full 'Lynis' security scan."
+
+        echo ""
+        echo -e "${WHITE}III. DASHBOARD MODE (SUBSEQUENT RUNS)${RESET}"
+        echo -e "If the server is already secured, the script opens a management menu:"
+        echo -e "  ${BLUE}[1] Re-run Hardening:${RESET} Updates packages and re-applies security rules."
+        echo -e "  ${BLUE}[2] Add Admin User:${RESET} Safely adds new sudo users with SSH keys."
+        echo -e "  ${BLUE}[3] Delete Admin User:${RESET} Removes a user and their home directory."
+        
+        echo ""
+        pause
 }
 
 docs_create_project() {
-    show_logo
-    log "Documentation: Create Project (v9.1)"
-    printf "\e[36m%s\e[0m\n" "--- I. PURPOSE ---"
-    printf " %s\n" "This is the **architect**. It doesn't just configure a server; it **writes a huge"
-    printf " %s\n" "amount of high-quality, secure backend code for you.**"
+        show_logo
+        log "Documentation: Create Project"
+        
+        echo -e "${WHITE}I. PURPOSE${RESET}"
+        echo -e "The 'Architect'. Scaffolds high-performance, secure backend code and infrastructure."
+        echo -e "It handles the boring setup so you can focus on code."
+        echo ""
 
-    printf "\n\e[36m%s\e[0m\n" "--- II. GENERATED COMPONENTS & FEATURES ---"
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "auth Service" "A complete user authentication system out of the box."
-    printf "    - \e[32m%s\e[0m: %s\n" "Magic Link Login" "Passwordless, email-based login flow using Resend."
-    printf "    - \e[32m%s\e[0m: %s\n" "Professional Emails" "Sends a professionally designed HTML email for the magic link."
-    printf "    - \e[32m%s\e[0m: %s\n" "JWT Session Tokens" "Industry-standard, secure session management."
-    printf "    - \e[32m%s\e[0m: %s\n" "Full Profile Management" "Endpoints for /me, /update-me, /public-profile, and /delete-me."
-    printf "    - \e[32m%s\e[0m: %s\n" "Rich Profiles" "Schema includes display name, photo, bio, and a flexible JSON social links field."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "database Service" "A powerful and secure data API using SQLite."
-    printf "    - \e[32m%s\e[0m: %s\n" "Flexible Schema" "Supports slug, title, type, category, tags, and a freeform JSON \`data\` field."
-    printf "    - \e[32m%s\e[0m: %s\n" "Full CRUD & Search" "Pre-built endpoints for creating, reading, updating, deleting, and searching."
-    printf "    - \e[32m%s\e[0m: %s\n" "Admin & Public APIs" "Separate endpoints for admin-only listing (\`/listall\`) and public listing (\`/listpublic\`)."
-    printf "    - \e[32m%s\e[0m: %s\n" "Data Ownership" "Generated code ensures users can only edit or delete content they own."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "storage Service" "A robust system for handling file uploads."
-    printf "    - \e[32m%s\e[0m: %s\n" "Authenticated Actions" "All uploads and deletions are protected and require a valid user token."
-    printf "    - \e[32m%s\e[0m: %s\n" "Full File Management" "Includes endpoints for uploading, downloading, listing, and deleting files."
-    printf "    - \e[32m%s\e[0m: %s\n" "Secure & Organized" "Uses secure, unguessable IDs and sanitizes filenames."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "app Service" "A blank canvas for your custom business logic, with example endpoints."
-    printf "    - \e[32m%s\e[0m: %s\n" "Example Endpoints" "Includes public, user-authenticated, and admin-key-protected examples."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "website Host" "A properly configured NGINX site to serve your static frontend."
+        echo -e "${WHITE}II. GENERATED COMPONENTS${RESET}"
+        echo -e "  ${GREEN}1. Auth Service (Port 8100+):${RESET}"
+        echo -e "     - Magic Link login (via Resend)."
+        echo -e "     - JWT Session management."
+        echo -e "     - Endpoints: /login, /verify, /me, /public-profile."
+        
+        echo -e "  ${GREEN}2. Database Service (Port 8101+):${RESET}"
+        echo -e "     - Flexible Content API (SQLite)."
+        echo -e "     - Endpoints: /create, /listall, /search, /delete (User-owned data)."
+        
+        echo -e "  ${GREEN}3. Storage Service (Port 8102+):${RESET}"
+        echo -e "     - Secure file uploads with sanitized filenames."
+        echo -e "     - Endpoints: /upload, /download/{id}, /list."
+        
+        echo -e "  ${GREEN}4. App Service (Port 8103+):${RESET}"
+        echo -e "     - A blank canvas for your custom business logic."
+        
+        echo -e "  ${GREEN}5. Website:${RESET}"
+        echo -e "     - Standard NGINX host for your static frontend (React/Vue/HTML)."
 
-    printf "\n\e[36m%s\e[0m\n" "--- III. OTHER KEY ACTIONS ---"
-    printf "  - \e[32m%s\e[0m: %s\n" "CORS Enabled" "All backend services include CORS middleware to allow your frontend to connect."
-    printf "  - \e[32m%s\e[0m: %s\n" "Isolated Infrastructure" "Creates dedicated users, Python virtual environments, and systemd services for each project."
-    printf "  - \e[32m%s\e[0m: %s\n" "Automated Configuration" "Handles NGINX, SSL, and log rotation automatically."
-    printf "  - \e[32m%s\e[0m: %s\n" "Dependency Management" "Generates a \`requirements.txt\` file for reproducible builds."
-    printf "  - \e[32m%s\e[0m: %s\n" "Full Restore Capability" "Can restore a complete project from a backup archive."
-    pause
+        echo ""
+        echo -e "${WHITE}III. INFRASTRUCTURE${RESET}"
+        echo -e "  - ${BLUE}Isolation:${RESET} Dedicated system user and Python venv for each project."
+        echo -e "  - ${BLUE}Logs:${RESET} Dedicated NGINX access/error logs per project."
+        echo -e "  - ${BLUE}Rotation:${RESET} Dual logrotate policy (7 days for app logs, 6 months for NGINX)."
+        echo -e "  - ${BLUE}Manifest:${RESET} Creates 'project.conf' to track configuration."
+
+        echo ""
+        echo -e "${WHITE}IV. RESTORE MODE${RESET}"
+        echo -e "  - Select '[R] Restore' to rebuild a project from a backup archive."
+        echo -e "  - Supports restoring from a **Local File** or a **URL**."
+        
+        echo ""
+        pause
 }
 
 docs_manage_app() {
-    show_logo
-    log "Documentation: Manage App (v4.3.0)"
-    printf "\e[36m%s\e[0m\n" "--- I. PURPOSE ---"
-    printf " %s\n" "This is the **project manager**. It is your day-to-day command center for all"
-    printf " %s\n" "operations related to a **single, specific application** that is already deployed."
+        show_logo
+        log "Documentation: Manage App"
+        
+        echo -e "${WHITE}I. PURPOSE${RESET}"
+        echo -e "The 'Daily Driver'. Manages the lifecycle of a single application."
+        echo ""
 
-    printf "\n\e[36m%s\e[0m\n" "--- II. KEY FEATURES ---"
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Live Log Streaming" "Instantly tail the logs for any backend service to debug issues in real-time."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Guided Code Deployment" "Deploy code from a local path on the server or directly from a URL"
-    printf "    %s\n" "(e.g., a GitHub release .zip). Includes a dry-run preview to prevent mistakes."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Interactive Database Explorer" "Finds your project's databases and lets you explore them with"
-    printf "    %s\n" "the powerful and user-friendly \`litecli\` tool."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "JWT Secret Rotation" "A critical security utility to generate a new master key for signing"
-    printf "    %s\n" "tokens, instantly invalidating all active user sessions."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Secure Secret Management" "View or edit API keys and other secrets in your \`.env\` files."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Effortless Backups" "Create a full-project backup (code + data) or a safe, database-only backup."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Direct Shell Access" "Opens a shell as the application's user with its Python venv already activated."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "The 'Big Red Button'" "Completely and cleanly removes every trace of a project from the server."
-    pause
+        echo -e "${WHITE}II. KEY WORKFLOWS${RESET}"
+        echo -e "  ${BLUE}[D/U] Deploy Code:${RESET}"
+        echo -e "      - **Local:** Rsyncs code from a folder on the server."
+        echo -e "      - **URL:** Downloads and extracts a zip (e.g. GitHub Release)."
+        echo -e "      - *Smart:* Preserves 'venv' and '.db' files automatically."
+        
+        echo -e "  ${BLUE}[C] Edit NGINX:${RESET}"
+        echo -e "      - Opens the config in nano."
+        echo -e "      - **Safety:** Runs 'nginx -t' before reloading to prevent crashes."
+        
+        echo -e "  ${BLUE}[E] Edit .env:${RESET}"
+        echo -e "      - Securely change API Keys or Secrets."
+        echo -e "      - prompts to restart the service immediately after saving."
+
+        echo -e "  ${BLUE}[Z] Service Shell:${RESET}"
+        echo -e "      - Drops you into a terminal AS the app user."
+        echo -e "      - **Auto-Activates:** The Python venv is ready to use."
+        echo -e "      - Use for: 'pip install', database migrations, manual scripts."
+
+        echo -e "  ${BLUE}[DB] Explore Database:${RESET}"
+        echo -e "      - Opens 'litecli' (SQL client) for the project's SQLite files."
+
+        echo -e "  ${BLUE}[J] Rotate JWT:${RESET}"
+        echo -e "      - Emergency tool. Generates new signing keys."
+        echo -e "      - **Effect:** Logs out ALL users immediately."
+
+        echo ""
+        echo -e "${WHITE}III. LOGS & DEBUGGING${RESET}"
+        echo -e "  - **Live Logs:** Stream stdout/stderr from the backend service."
+        echo -e "  - **NGINX Logs:** Filter by Frontend vs Backend, Access vs Error."
+        
+        echo ""
+        pause
 }
 
 docs_server_maintenance() {
-    show_logo
-    log "Documentation: Server Maintenance (v1.2)"
-    printf "\e[36m%s\e[0m\n" "--- I. PURPOSE ---"
-    printf " %s\n" "This is the **server operator**. Use this script to manage the health and"
-    printf " %s\n" "utilities of the **entire server as a whole**, not just one specific project."
+        show_logo
+        log "Documentation: Server Maintenance"
+        
+        echo -e "${WHITE}I. PURPOSE${RESET}"
+        echo -e "The 'Operator's Dashboard'. A 360-degree view of server health and utilities."
+        echo ""
 
-    printf "\n\e[36m%s\e[0m\n" "--- II. KEY FEATURES ---"
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Interactive Diagnostics" "Launch \`htop\` for real-time process viewing or \`ncdu\` to interactively"
-    printf "    %s\n" "explore what's taking up disk space."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "GUI File Browser" "Launch Midnight Commander (\`mc\`), a powerful, two-pane visual file manager"
-    printf "    %s\n" "for easy server navigation and file operations right in your terminal."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Log Viewers" "Quickly check the latest SSH login attempts (\`auth.log\`) and firewall"
-    printf "    %s\n" "activity (\`ufw.log\`) directly from the menu."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Global Database Explorer" "Finds and lets you explore **any** SQLite database on the server"
-    printf "    %s\n" "with the friendly \`litecli\` interface."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Download Files from URL" "A simple wizard to fetch files from the web directly into a"
-    printf "    %s\n" "dedicated, non-web-served folder in \`/var/www/kcstudio/downloads\`."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Powerful Utilities" "Manage any systemd service with a searchable \`fzf\` interface, add cron jobs with a"
-    printf "    %s\n" "wizard, check SSL status, or add/change a swap file."
-    printf "  ✅ \e[33m%s\e[0m: %s\n" "Traffic Analysis" "Generate a beautiful \`GoAccess\` HTML report from your NGINX logs to see"
-    printf "    %s\n" "who is visiting your sites and what pages are popular."
-    pause
+        echo -e "${WHITE}II. MONITORING TOOLS${RESET}"
+        echo -e "  ${BLUE}htop / Resource Overview:${RESET} Real-time CPU, RAM, and Load Average."
+        echo -e "  ${BLUE}ncdu:${RESET} Interactive disk usage analyzer. Find large files fast."
+        echo -e "  ${BLUE}Netstat / Ports:${RESET} See exactly which ports are open and listening."
+        echo -e "  ${BLUE}Network Analysis:${RESET} View active connections by IP count (detect DDoS/Spikes)."
+
+        echo ""
+        echo -e "${WHITE}III. FILE OPERATIONS${RESET}"
+        echo -e "  ${BLUE}Midnight Commander (mc):${RESET} Visual file manager (like Finder/Explorer)."
+        echo -e "  ${BLUE}Upload Helper:${RESET} Select ANY file/folder, zip it (if needed), and upload to transfer service."
+        echo -e "  ${BLUE}Download URL:${RESET} Wget wrapper to fetch files into a clean downloads folder."
+        echo -e "  ${BLUE}Inode Usage:${RESET} Diagnose 'Disk Full' errors caused by too many small files."
+
+        echo ""
+        echo -e "${WHITE}IV. CONFIGURATION & SECURITY${RESET}"
+        echo -e "  ${BLUE}Journal & Alerts:${RESET} View system logs or setup a Webhook for error notifications."
+        echo -e "  ${BLUE}Fail2Ban:${RESET} View banned IPs and unban them."
+        echo -e "  ${BLUE}Backup Retention:${RESET} Set a policy to auto-delete backups older than X days."
+        echo -e "  ${BLUE}Backup ALL:${RESET} Create a master disaster-recovery archive of /var/www."
+
+        echo ""
+        pause
 }
 
 docs_big_picture() {
     show_logo
-    log "Documentation: The 'Big Picture' Workflow"
-    printf "\e[36m%s\e[0m\n" "--- I. THE PHILOSOPHY: A GUIDED PATH ---"
-    printf " %s\n" "This toolkit isn't just a collection of scripts; it's a logical workflow."
-    printf " %s\n" "It's designed to guide you through the entire process of launching and maintaining a"
-    printf " %s\n" "professional-grade application, with four 'assistants' to help you at each stage."
+    log "The Big Picture: How Launchpad Fits Together"
 
-    printf "\n\e[36m%s\e[0m\n" "--- II. THE RECOMMENDED WORKFLOW ---"
-    printf " \e[33m%s\e[0m\n" "Step 1: PREPARE THE GROUND (Run Once Per Server)"
-    printf "   \e[35m->\e[0m %s\n" "Tool: \`Secure Core VPS Setup\`"
-    printf "   \e[35m->\e[0m %s\n" "Goal: To turn a generic server into your personal, secure fortress."
+    printf "\n"
+    printf " \e[36m%s\e[0m\n" "A Structured, Sequential Workflow"
+    printf " %s\n" "KCstudio Launchpad is not a random collection of tools."
+    printf " %s\n" "It is designed as a clear lifecycle for running applications on a VPS."
 
-    printf "\n \e[33m%s\e[0m\n" "Step 2: CONSTRUCT THE MASTERPIECE (Run Once Per Project)"
-    printf "   \e[35m->\e[0m %s\n" "Tool: \`Create Project\`"
-    printf "   \e[35m->\e[0m %s\n" "Goal: To build and deploy a new, complete, full-stack application from scratch."
+    printf "\n \e[33m%s\e[0m\n" "Step 1: Secure the Foundation (Once per Server)"
+    printf "   \e[35m->\e[0m %s\n" "Tool: SecureCoreVPS-Setup"
+    printf "   \e[35m->\e[0m %s\n" "Outcome: A hardened, known-good baseline with secure access and updates."
 
-    printf "\n \e[33m%s\e[0m\n" "Step 3: MANAGE THE ESTATE (Run as Needed for One Project)"
-    printf "   \e[35m->\e[0m %s\n" "Tool: \`Manage App\`"
-    printf "   \e[35m->\e[0m %s\n" "Context: You are working on **one specific project**."
-    printf "   \e[35m->\e[0m %s\n" "Tasks: Updating Python code, checking that project's logs, creating a backup."
+    printf "\n \e[33m%s\e[0m\n" "Step 2: Architect Applications (Once per Project)"
+    printf "   \e[35m->\e[0m %s\n" "Tool: CreateProject"
+    printf "   \e[35m->\e[0m %s\n" "Outcome: A fully wired project with users, services, domains, and HTTPS."
 
-    printf "\n \e[33m%s\e[0m\n" "Step 4: OPERATE THE ENTIRE PROPERTY (Run as Needed for the Whole Server)"
-    printf "   \e[35m->\e[0m %s\n" "Tool: \`Server Maintenance\`"
-    printf "   \e[35m->\e[0m %s\n" "Context: You are concerned with the **health of the entire server**."
-    printf "   \e[35m->\e[0m %s\n" "Tasks: 'Why is the server slow?', 'Is the disk full?', 'Let me browse the filesystem.'"
+    printf "\n \e[33m%s\e[0m\n" "Step 3: Manage Projects (Daily Operations)"
+    printf "   \e[35m->\e[0m %s\n" "Tool: ManageApp"
+    printf "   \e[35m->\e[0m %s\n" "Outcome: Safe deployments, log access, backups, and configuration changes."
+
+    printf "\n \e[33m%s\e[0m\n" "Step 4: Operate the Server (As Needed)"
+    printf "   \e[35m->\e[0m %s\n" "Tool: ServerMaintenance"
+    printf "   \e[35m->\e[0m %s\n" "Outcome: Visibility and control over the host itself."
+
+    printf "\n"
+    printf " %s\n" "Each step builds on the previous one."
+    printf " %s\n" "The result is predictability, isolation, and confidence."
+    printf " %s\n" "Even when running many projects on a single machine."
+
+    echo ""
     pause
 }
 
-# CORRECTED FUNCTION: Uses printf with explicit newlines for robustness.
 docs_how_to_use_api() {
     show_logo
     log "Guide: How to Use the Generated API"
@@ -396,10 +490,10 @@ docs_how_to_use_api() {
     printf "     - \e[90m%s\e[0m\n" "You send it in a special 'X-Admin-API-Key' header."
     printf "   \e[35m$\e[0m \e[32mcurl -H \"X-Admin-API-Key: <your_admin_key_here>\" https://api.example.com/v1/app/admin/system-status\e[0m\n"
     printf "\n %s\n" "You can find your Admin API keys using the 'Manage App' script."
+    echo ""
     pause
 }
 
-# CORRECTED FUNCTION: Uses printf for each line for maximum compatibility and custom styling.
 _display_styled_api_reference() {
     (
     printf "\n"
@@ -491,10 +585,12 @@ _display_styled_api_reference() {
 
 docs_api_reference() {
     show_logo
+    echo ""
     log "Full API Reference"
     printf " %s\n" "This is a summary of all API endpoints for the generated services."
     printf " %s\n" "For full request/response models, please see the OpenAPI .yml file."
-    read -p "Press [Enter] to display the reference (use arrow keys to scroll, 'q' to quit)..."
+    echo ""
+    read -p "Press [Enter] to display the reference (scroll with mouse or keys, press 'q' to quit)..."
     _display_styled_api_reference
 }
 
@@ -525,80 +621,98 @@ docs_manual_commands() {
     printf "  %-40s %s\n" "sudo chmod 755 /path/to/file" "Change a file's permissions."
     printf "  %-40s %s\n" "scp -P <port> user@ip:/remote/path ." "Copy a file FROM the server."
     printf "  %-40s %s\n" "scp -P <port> local_file user@ip:/path/" "Copy a file TO the server."
-
+    echo ""
     pause
 }
 
 docs_philosophy() {
     show_logo
     log "About & The Toolkit Philosophy"
-    printf "\n"
-    printf " \e[1;33m%s\e[0m\n" "This is a Toolkit for People Who Just Want to Ship Their Damn Project."
-    printf "  %s\n" "Let's be honest. You have an idea. You build a cool little app. And then you hit the wall."
-    printf "  %s\n" "The wall of modern DevOps. A thousand tutorials, a dozen config files, and an ocean of"
-    printf "  %s\n" "YAML stand between your code and a public URL. This toolkit is a battering ram for that wall."
 
     printf "\n"
-    printf " \e[1;33m%s\e[0m\n" "I'm Not an Expert. I Built This Because I Was Scared of the Command Line."
-    printf "  %s\n" "I'm a builder, not a sysadmin. I was tired of the confusing, error-prone mess of manual server"
-    printf "  %s\n" "setup. So I built a personal server butler to automate the scary parts and let me get back to"
-    printf "  %s\n" "what I love: creating things. This is the result of a caffeine-fueled learning sprint, not"
-    printf "  %s\n" "decades of experience. It's my learning journey, codified."
+    printf " \e[1;33m%s\e[0m\n" "Control, Not Complexity."
+    printf "  %s\n" "KCstudio Launchpad exists to solve a very specific problem:"
+    printf "  %s\n" "running multiple real applications on a single VPS safely and predictably."
+    printf "  %s\n" "Not by abstracting the server away - but by structuring it properly."
 
     printf "\n"
-    printf " \e[1;33m%s\e[0m\n" "The Philosophy is Simple: Control, Not Complexity."
-    printf "  \e[36m∙ No Docker, No Kubernetes:\e[0m\n"
-    printf "    %s\n" "Not because they're bad, but because for a soloist, they can be a heavy, abstract"
-    printf "    %s\n" "layer you don't need. This is about owning your stack, top to bottom."
-    printf "  \e[36m∙ Readable Scripts:\e[0m\n"
-    printf "    %s\n" "You can read every command the butler executes. There is no magic. It's a powerful way"
-    printf "    %s\n" "to learn what's actually happening on your server."
-    printf "  \e[36m∙ Empowerment Through Automation:\e[0m\n"
-    printf "    %s\n" "Good tools don't just run commands; they handle the tedious details so you can focus"
-    printf "    %s\n" "on your creation. This is a tool for getting things done."
+    printf " \e[1;33m%s\e[0m\n" "Built From Repetition, Not Theory"
+    printf "  %s\n" "This toolkit is the result of doing the same work over and over:"
+    printf "  %s\n" "hardening servers, provisioning users, wiring services, debugging failures,"
+    printf "  %s\n" "and cleaning up mistakes."
+    printf "  %s\n" "Eventually, those workflows were systematized into something repeatable."
 
     printf "\n"
-    printf " \e[1;33m%s\e[0m\n" "What This Is, and What It Isn't"
-    printf "  %s\n" "This is a hammer. A really, really good hammer for the specific nail of deploying full-stack"
-    printf "  %s\n" "apps on a single VPS. It's for the freelancer, the indie hacker, the hobbyist. It is NOT an"
-    printf "  %s\n" "enterprise-grade, multi-server, auto-scaling cluster manager. It's a tool for adults who"
-    printf "  %s\n" "value simplicity, speed, and total control."
+    printf " \e[1;33m%s\e[0m\n" "Host-Native by Design"
+    printf "  %s\n" "Launchpad uses standard Linux primitives:"
+    printf "  %s\n" "users, files, systemd, NGINX, and SSH."
+    printf "  %s\n" "No containers by default - not because they are bad,"
+    printf "  %s\n" "but because many projects do not require that level of indirection."
+
+    printf "\n"
+    printf " \e[1;33m%s\e[0m\n" "Automation Without Obscurity"
+    printf "  %s\n" "Every action is scripted, visible, and auditable."
+    printf "  %s\n" "Repetitive tasks are automated."
+    printf "  %s\n" "Critical decisions are surfaced, not hidden."
+
+    printf "\n"
+    printf " \e[1;33m%s\e[0m\n" "What This Is - and What It Isn't"
+    printf "  %s\n" "This is not a managed platform."
+    printf "  %s\n" "It is not a multi-server orchestration system."
+    printf "  %s\n" "It is a deliberate, opinionated toolkit for people who want"
+    printf "  %s\n" "to own and understand their infrastructure."
+
+    echo ""
     pause
 }
 
 
+
 # --- Main Menu Loop ---
 main() {
+
+    # Check if server is secured by KCstudio Launchpad for conditional red arrow
+    local SECURE_CORE_READY=false
+    [ -f "$SECURE_STATE_FILE" ] && SECURE_CORE_READY=true
+
     while true; do
         show_logo
         printf "%s\n" "==================================================================================="
-        printf "             \e[1;37m%s\e[0m\n" "KCStudio Launchpad V1.0"
-        printf "           \e[90m%s\e[0m\n" "The Developer's Launch Platform"
+        printf "                           \e[1;37m%s\e[0m\n" "KCStudio Launchpad V2.0"
+        printf "                       \e[90m%s\e[0m\n" "The Developer's Launch Platform"
         printf "%s\n" "==================================================================================="
         printf "\n"
-        printf "  \e[36m[1] Prepare This Server For First Use\e[0m\n"
-        printf "      \e[90m%s\e[0m\n" "(Run once on a fresh VPS to harden and prepare it)"
+
+        # Conditional red arrow        
+        if [ "$SECURE_CORE_READY" = false ]; then
+            printf "  \e[36m[1]\e[0m \e[1;37mPrepare This Server For First Use\e[0m \e[31m◀ (run this first)\e[0m\n"
+            printf "      \e[90m%s\e[0m\n" "(Required on a fresh VPS before using other features)"
+        else
+            printf "  \e[36m[1]\e[0m \e[1;37mPrepare This Server For First Use\e[0m\n"
+            printf "      \e[90m%s\e[0m\n" "(Already hardened, select to manage Admins)"
+        fi
+
         printf "\n"
-        printf "  \e[36m[2] Architect a New Full-Stack Project\e[0m\n"
+        printf "  \e[36m[2]\e[0m \e[1;37mArchitect a New Full-Stack Project\e[0m\n"
         printf "      \e[90m%s\e[0m\n" "(Run for each new project you want to build)"
         printf "\n"
-        printf "  \e[36m[3] Manage an Existing Project\e[0m\n"
+        printf "  \e[36m[3]\e[0m \e[1;37mManage an Existing Project\e[0m\n"
         printf "      \e[90m%s\e[0m\n" "(Deploy code, view logs, backup a specific project)"
         printf "\n"
-        printf "  \e[36m[4] Operate the Server\e[0m\n"
+        printf "  \e[36m[4]\e[0m \e[1;37mOperate the Server\e[0m\n"
         printf "      \e[90m%s\e[0m\n" "(Check server health, manage swap, analyze traffic, etc.)"
         printf "\n"
         printf "%s\n" "-----------------------------------------------------------------------------------"
-        printf "  \e[37m%s\e[0m      \e[37m%s\e[0m\n" "[D] Documentation & User Guides" "[Q] Quit"
+        printf "  \e[36m[H]\e[0m Documentation & User Guides         \e[36m[Q]\e[0m Quit\n"
         printf "%s\n" "==================================================================================="
-        prompt "What do you want to do today? " main_choice
+        prompt "Your choice: " main_choice
 
         case $main_choice in
-            1) run_script "SecureCoreVPS-SetupV5.1.sh" ; pause ;;
-            2) run_script "CreateProjectV9.3.sh" ; pause ;;
-            3) run_script "ManageAppV4.3.sh" ; pause ;;
-            4) run_script "ServerMaintenanceV1.2.sh" ; pause ;;
-            [Dd]) show_docs_main ;;
+            1) run_script "SecureCoreVPS-Setup" ; pause ;;
+            2) run_script "CreateProject" ; pause ;;
+            3) run_script "ManageApp" ; pause ;;
+            4) run_script "ServerMaintenance" ; pause ;;
+            [Hh]) show_docs_main ;;
             [Qq]) echo "Exiting." && exit 0 ;;
             *) warn "Invalid choice." ; pause ;;
         esac
@@ -609,7 +723,6 @@ main() {
 launch_kcstudio
 verify_os
 sleep 0.5
-# pause  # Optional: pause to let the user admire the animation
 
 # --- Execute Main ---
 main
