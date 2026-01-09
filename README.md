@@ -41,6 +41,45 @@ It’s opinionated, pragmatic, and designed for people who want:
 
 ---
 
+## Why KCstudio Launchpad exists
+
+Most self-hosting tools either:
+
+* Hide everything behind containers, or
+
+* Assume you already know how to be a sysadmin.
+
+Launchpad sits in between:
+
+* Host-native,
+
+* Opinionated,
+
+* Hard to accidentally break.
+
+It’s what you build after breaking a VPS a few times.
+
+---
+
+## Quick start
+
+Run this on a **fresh Ubuntu 24.04 VPS**, logged in as `root`:
+
+```bash
+wget https://github.com/kelvincdeen/kcstudio-launchpad/releases/latest/download/kcstudio-launchpad.deb && \
+sudo apt install ./kcstudio-launchpad.deb
+````
+Once installed, run:
+`launchpad`
+
+Launchpad will guide you from there.
+
+Distributed as a .deb for convenient install; target OS: Ubuntu 24.04.
+
+Launchpad installs under /opt/kcstudio-launchpad/ and exposes the `launchpad` and `kcstudio-launchpad` commands system-wide.
+
+---
+
 ## Who this is for (and who it isn’t)
 
 ### This is for you if:
@@ -88,16 +127,13 @@ From here, the toolkit:
 
 Each step is **interactive and self-documented** - you are never dropped into blind commands or unexplained automation. There is more to discover inside the toolkit than can be captured in a README.
 
-<br>
+
+## Launchpad guides you through a **four-step lifecycle**, from a blank VPS to a portfolio of running applications.
 
 <a href="https://launchpad.kcstudio.nl">
   <img src="https://launchpad.kcstudio.nl/github/kcstudio_launchpad_hub_hardened.png" alt="KCStudio Launchpad Main Menu Startup">
 </a>
 
-
-</br>
-
-## Launchpad guides you through a **four-step lifecycle**, from a blank VPS to a portfolio of running applications.
 
 ### 1. Secure the foundation
 **`SecureCoreVPS-Setup`** hardens a fresh Ubuntu 24.04 server:
@@ -184,25 +220,6 @@ Each component:
 - Can be restarted or debugged independently
 
 No hidden magic. Everything lives where you expect it.
-
----
-
-## Quick start
-
-Run this on a **fresh Ubuntu 24.04 VPS**, logged in as `root`:
-
-```bash
-wget https://github.com/kelvincdeen/kcstudio-launchpad/releases/latest/download/kcstudio-launchpad.deb && \
-sudo apt install ./kcstudio-launchpad.deb
-````
-Once installed, run:
-`launchpad`
-
-Launchpad will guide you from there.
-
-Distributed as a .deb for convenient install; target OS: Ubuntu 24.04.
-
-Launchpad installs under /opt/kcstudio-launchpad/ and exposes the `launchpad` and `kcstudio-launchpad` commands system-wide.
 
 ---
 
